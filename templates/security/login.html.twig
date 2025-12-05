@@ -1,6 +1,11 @@
 {% extends 'base.html.twig' %}
-
+        
 {% block title %}Log in!{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }} {# garde les CSS globaux déjà présents #}
+    <link rel="stylesheet" href="/app.css"> {# CSS spécifique à cette page #}
+{% endblock %}
 
 {% block body %}
 <div class="login-container">
