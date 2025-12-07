@@ -15,6 +15,11 @@ WORKDIR /app
 
 VOLUME /app/var/
 
+# Install Node.js (version 22 par exemple) + npm
+RUN apt-get update && apt-get install -y curl && \
+    curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
+    apt-get install -y nodejs
+
 # persistent / runtime deps
 # hadolint ignore=DL3008
 RUN apt-get update && apt-get install -y --no-install-recommends \
