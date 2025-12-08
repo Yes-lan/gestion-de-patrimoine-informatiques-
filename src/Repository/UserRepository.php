@@ -31,7 +31,19 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $user->setPassword($newHashedPassword);
         $this->getEntityManager()->persist($user);
         $this->getEntityManager()->flush();
+
     }
+    
+    public function userExists(string $username): bool
+    {
+        return (bool) $this->createQueryBuilder('u')
+            ->select('COUNT(u.id)')
+            ->where('u.username = :username')
+            ->setParameter('username', $username)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
 
     //    /**
     //     * @return User[] Returns an array of User objects
