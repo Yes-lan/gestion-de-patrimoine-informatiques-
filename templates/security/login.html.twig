@@ -40,6 +40,18 @@
             {# Token CSRF si tu utilises Symfony Security #}
             <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
         </form>
+        {% if user %}
+            <div class="alert alert-success">
+                User valide : {{ user.email }}
+            </div>
+        {% endif %}
+
+        {% if error %}
+            <div class="alert alert-danger">
+                {{ error }}
+            </div>
+        {% endif %}
+
     </div>
 </div>
 {% endblock %}

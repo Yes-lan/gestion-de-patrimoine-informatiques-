@@ -10,32 +10,25 @@ use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 class SecurityController extends AbstractController
 {
     #[Route(path: '/', name: 'app_login')]
-    public function login(AuthenticationUtils $authenticationUtils): Response
-    {
+public function login(AuthenticationUtils $authenticationUtils): Response
+{
+    // Récupère l'erreur de connexion
+    $error = $authenticationUtils->getLastAuthenticationError();
 
+    // Dernier email entré
+    $lastUsername = $authenticationUtils->getLastUsername();
 
-        // get the login error if there is one
-        $error = $authenticationUtils->getLastAuthenticationError();
+    // Vérifie si l'utilisateur est connecté
+    $user = $this->getUser();
 
-        // last username entered by the user
-        $lastUsername = $authenticationUtils->getLastUsername();
+    return $this->render('security/login.html.twig', [
+        'last_username' => $lastUsername,
+        // Si erreur → "User invalide", sinon null
+        'error' => $error ? 'User invalide' : null,
+        'user' => $user,
+    ]);
+}
 
-        return $this->render('security/login.html.twig', [
-            'last_username' => $lastUsername,
-            'error' => $error,
-        ]);
-        // Ici, on récupère l'utilisateur connecté
-        $user = $this->getUser();
-
-        if ($user) {
-            // L'utilisateur est connecté
-            $email = $user->getUserIdentifier(); // ou $user->getEmail()
-            return new Response("Utilisateur connecté : $email");
-        } else {
-            // Aucun utilisateur connecté
-            return new Response("Aucun utilisateur connecté");
-        }
-    }
 
     #[Route(path: '/logout', name: 'app_logout')]
     public function logout(): void
