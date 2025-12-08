@@ -13,7 +13,7 @@ class HomeController extends AbstractController
     {
         // Si l'utilisateur est connecté, afficher le dashboard
         if ($this->getUser()) {
-            return $this->render('home/dashboard.html.twig');
+            return $this->render('home/index.html.twig');
         }
 
         // Sinon, rediriger vers la page de login
