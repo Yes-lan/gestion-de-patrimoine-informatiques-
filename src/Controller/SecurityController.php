@@ -6,33 +6,39 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 
 class SecurityController extends AbstractController
 {
-    #[Route(path: '/', name: 'app_login')]
-public function login(AuthenticationUtils $authenticationUtils): Response
+
+
+#[Route(path: '/', name: 'app_login')]
+public function login(AuthenticationUtils $authenticationUtils, Request $request)
 {
-    // Récupère l'erreur de connexion
+    // Si c'est une requête AJAX
+    if ($request->isXmlHttpRequest()) {
+        $user = $this->getUser();
+
+        if ($user) {
+            return new JsonResponse([
+                'success' => true,
+                'email' => $user->getUserIdentifier()
+            ]);
+        } else {
+            return new JsonResponse([
+                'success' => false
+            ]);
+        }
+    }
+
+    // Requête normale (page affichée au départ)
     $error = $authenticationUtils->getLastAuthenticationError();
-
-    // Dernier email entré
     $lastUsername = $authenticationUtils->getLastUsername();
-
-    // Vérifie si l'utilisateur est connecté
-    $user = $this->getUser();
 
     return $this->render('security/login.html.twig', [
         'last_username' => $lastUsername,
-        // Si erreur → "User invalide", sinon null
-        'error' => $error ? 'User invalide' : null,
-        'user' => $user,
+        'error' => $error,
+        'user' => $this->getUser()
     ]);
-}
-
-
-    #[Route(path: '/logout', name: 'app_logout')]
-    public function logout(): void
-    {
-        throw new \LogicException('This method can be blank - it will be intercepted by the logout key on your firewall.');
-    }
 }
