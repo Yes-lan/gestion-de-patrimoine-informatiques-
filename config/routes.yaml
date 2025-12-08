@@ -8,5 +8,5 @@
 #   bin/console debug:router
 
 controllers:
-    resource: ../../src/Controller/
+    resource: routing.controllers
     type: annotation
