@@ -5,13 +5,9 @@
     <div class="card p-4 shadow" style="width: 400px;">
         <h3 class="text-center mb-4">Connexion</h3>
 
-        {% if error %}
-            <div class="alert alert-danger">
-                {{ error.messageKey|trans(error.messageData, 'security') }}
-            </div>
-        {% endif %}
+        <div id="message"></div> {# Ici on affichera User valide/invalide #}
 
-        <form method="post">
+        <form id="loginForm" method="post">
             <div class="mb-3">
                 <label for="username" class="form-label">Email</label>
                 <input 
@@ -35,23 +31,38 @@
                 >
             </div>
 
-            <button class="btn btn-primary w-100">Se connecter</button>
+            <button type="submit" class="btn btn-primary w-100">Se connecter</button>
 
-            {# Token CSRF si tu utilises Symfony Security #}
+            {# Token CSRF #}
             <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
         </form>
-        {% if user %}
-            <div class="alert alert-success">
-                User valide : {{ user.email }}
-            </div>
-        {% endif %}
-
-        {% if error %}
-            <div class="alert alert-danger">
-                {{ error }}
-            </div>
-        {% endif %}
-
     </div>
 </div>
+
+<script>
+document.getElementById('loginForm').addEventListener('submit', function(e) {
+    e.preventDefault(); // empêche le rechargement de la page
+
+    let form = e.target;
+    let formData = new FormData(form);
+
+    fetch("{{ path('app_login') }}", {
+        method: "POST",
+        body: formData,
+        headers: {
+            "X-Requested-With": "XMLHttpRequest"
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const messageDiv = document.getElementById('message');
+        if(data.success) {
+            messageDiv.innerHTML = `<div class="alert alert-success">User valide : ${data.email}</div>`;
+        } else {
+            messageDiv.innerHTML = `<div class="alert alert-danger">User invalide</div>`;
+        }
+    })
+    .catch(error => console.error('Erreur:', error));
+});
+</script>
 {% endblock %}
