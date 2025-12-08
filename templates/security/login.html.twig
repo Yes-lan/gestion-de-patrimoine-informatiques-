@@ -40,15 +40,6 @@
             {# Token CSRF si tu utilises Symfony Security #}
             <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
         </form>
-        {# Vérifie si un utilisateur est connecté #}
-        {% if app.user %}
-            <p>Utilisateur connecté : {{ app.user.email }}</p>
-            <a href="{{ path('app_logout') }}">Se déconnecter</a>
-        {% else %}
-            <p>Aucun utilisateur connecté</p>
-            <a href="{{ path('app_login') }}">Se connecter</a>
-        {% endif %}
-
     </div>
 </div>
 {% endblock %}
