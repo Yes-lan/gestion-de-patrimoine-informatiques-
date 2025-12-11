@@ -1,47 +1,47 @@
 {% extends 'base.html.twig' %}
 
 {% block body %}
-<div class="container d-flex justify-content-center align-items-center" style="min-height: 100vh;">
-    <div class="card p-4 shadow" style="width: 400px;">
-        <h3 class="text-center mb-4">Connexion</h3>
+<div class="login-card">
 
-        <div id="message"></div> {# Ici on affichera User valide/invalide #}
+    <h3>Connexion</h3>
 
-        <form id="loginForm" method="post">
-            <div class="mb-3">
-                <label for="username" class="form-label">Email</label>
-                <input 
-                    type="text" 
-                    name="_username"
-                    id="username"
-                    class="form-control"
-                    value="{{ last_username }}"
-                    required
-                >
-            </div>
+    <div id="message"></div>
 
-            <div class="mb-3">
-                <label for="password" class="form-label">Mot de passe</label>
-                <input 
-                    type="password" 
-                    name="_password"
-                    id="password"
-                    class="form-control"
-                    required
-                >
-            </div>
+    <form id="loginForm" method="post">
+        <div class="mb-3">
+            <label for="username" class="form-label">Email</label>
+            <input 
+                type="text" 
+                name="_username"
+                id="username"
+                class="form-control"
+                value="{{ last_username }}"
+                required
+            >
+        </div>
 
-            <button type="submit" class="btn btn-primary w-100">Se connecter</button>
+        <div class="mb-3">
+            <label for="password" class="form-label">Mot de passe</label>
+            <input 
+                type="password" 
+                name="_password"
+                id="password"
+                class="form-control"
+                required
+            >
+        </div>
 
-            {# Token CSRF #}
-            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
-        </form>
-    </div>
+        <button type="submit" class="btn btn-primary w-100">
+            Se connecter
+        </button>
+
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+    </form>
 </div>
 
 <script>
 document.getElementById('loginForm').addEventListener('submit', function(e) {
-    e.preventDefault(); // empêche le rechargement de la page
+    e.preventDefault();
 
     let form = e.target;
     let formData = new FormData(form);
@@ -57,9 +57,9 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
     .then(data => {
         const messageDiv = document.getElementById('message');
         if(data.success) {
-            messageDiv.innerHTML = `<div class="alert alert-success">User valide : ${data.email}</div>`;
+            messageDiv.innerHTML = `<div class="alert alert-success">Utilisateur valide : ${data.email}</div>`;
         } else {
-            messageDiv.innerHTML = `<div class="alert alert-danger">User invalide</div>`;
+            messageDiv.innerHTML = `<div class="alert alert-danger">Identifiants incorrects</div>`;
         }
     })
     .catch(error => console.error('Erreur:', error));

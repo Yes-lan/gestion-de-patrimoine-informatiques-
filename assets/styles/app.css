@@ -1,3 +1,56 @@
+/* ----------- RESET SIMPLE ----------- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
 body {
-    background-color: blue;
+    font-family: "Inter", sans-serif;
+    background: #f3f4f6; /* gris clair moderne */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+/* ----------- CARD ----------- */
+.login-card {
+    width: 100%;
+    max-width: 420px;
+    background: white;
+    padding: 35px 30px;
+    border-radius: 12px;
+    box-shadow: 0 8px 22px rgba(0,0,0,0.08);
+}
+
+/* ----------- TITRE ----------- */
+.login-card h3 {
+    text-align: center;
+    margin-bottom: 25px;
+    font-weight: 600;
+}
+
+/* ----------- INPUTS ----------- */
+.form-control {
+    border-radius: 8px !important;
+}
+
+.btn-primary {
+    background: #2563eb;
+    border: none;
+    border-radius: 8px;
+    font-weight: 500;
+    padding: 10px;
+    transition: 0.2s;
+}
+
+.btn-primary:hover {
+    background: #1e40af;
+}
+
+/* ----------- MESSAGES ----------- */
+#message {
+    margin-bottom: 15px;
 }
