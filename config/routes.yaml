@@ -10,3 +10,7 @@
 controllers:
     resource: routing.controllers
     type: annotation
+
+index:
+    path: /
+    controller: App\Controller\HomeController::index
