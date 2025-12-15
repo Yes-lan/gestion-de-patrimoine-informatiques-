@@ -1,0 +1,61 @@
+{# minimal template qui utilise base.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}Recherche Greffe{% endblock %}
+
+{% block body %}
+<h1>Recherche de patients (greffe)</h1>
+
+<div>
+  <label>
+    <input type="radio" name="status" value="" checked> Tous
+  </label>
+  <label>
+    <input type="radio" name="status" value="need"> Besoin de greffe
+  </label>
+  <label>
+    <input type="radio" name="status" value="had"> A subi une greffe
+  </label>
+  <button id="searchBtn">Rechercher</button>
+</div>
+
+<div id="results" style="margin-top:1rem;">
+  <em>Aucune recherche encore effectuée.</em>
+</div>
+
+<script>
+document.getElementById('searchBtn').addEventListener('click', function () {
+  const status = document.querySelector('input[name="status"]:checked').value;
+  const url = new URL('{{ path('app_greffe_search') }}', window.location.origin);
+  if (status) url.searchParams.set('status', status);
+
+  document.getElementById('results').innerHTML = 'Chargement…';
+
+  fetch(url.toString(), { headers: { 'Accept': 'application/json' } })
+    .then(r => r.json())
+    .then(data => {
+      if (!Array.isArray(data) || data.length === 0) {
+        document.getElementById('results').innerHTML = '<div>Aucun résultat.</div>';
+        return;
+      }
+      const list = document.createElement('div');
+      data.forEach(p => {
+        const item = document.createElement('div');
+        item.style.borderBottom = '1px solid #ddd';
+        item.style.padding = '8px 0';
+        item.innerHTML = '<strong>' + (p.nom||'') + ' ' + (p.prenom||'') + '</strong>'
+          + ' — ID: ' + (p.id||'')
+          + (p.date_naissance ? ' — Né(e): ' + p.date_naissance : '')
+          + (p.greffe ? '<br>Greffe: ' + (p.greffe.organ||'') + ' le ' + (p.greffe.date||'') : ' — Pas de greffe');
+        list.appendChild(item);
+      });
+      document.getElementById('results').innerHTML = '';
+      document.getElementById('results').appendChild(list);
+    })
+    .catch(err => {
+      console.error(err);
+      document.getElementById('results').innerHTML = '<div class="error">Erreur lors de la recherche.</div>';
+    });
+});
+</script>
+{% endblock %}
