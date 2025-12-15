@@ -20,8 +20,12 @@ security:
             lazy: true
             provider: app_user_provider
             form_login:
+                # conserver login_path/check_path existants
                 login_path: app_login
                 check_path: app_login
+                # rediriger vers /greffe après login
+                default_target_path: /greffe
+                always_use_default_target_path: true
                 enable_csrf: true
             logout:
                 path: app_logout

@@ -6,45 +6,56 @@
 {% block body %}
 <section class="greffe-search">
   <header class="greffe-header">
-    <h1>Recherche de patients — Greffe</h1>
-    <p class="subtitle">Filtrer rapidement les patients ayant besoin d'une greffe ou ayant déjà subi une greffe.</p>
+    <h1>Recherche patients</h1>
+    <p class="subtitle">Barre de recherche par nom/prénom + filtres (status, organe, plage de dates).</p>
   </header>
 
   <div class="controls">
-    <div class="radio-group" role="radiogroup" aria-label="Filtre greffe">
-      <label class="radio-item">
-        <input type="radio" name="status" value="" checked>
-        <span>Tous</span>
-      </label>
-      <label class="radio-item">
-        <input type="radio" name="status" value="need">
-        <span>Besoin de greffe</span>
-      </label>
-      <label class="radio-item">
-        <input type="radio" name="status" value="had">
-        <span>A subi une greffe</span>
-      </label>
-    </div>
+    <input id="q" type="search" placeholder="Nom ou prénom..." style="flex:1; padding:8px 10px; border-radius:6px; border:1px solid #d1d5db;" />
+
+    <select id="status" style="padding:8px; border-radius:6px; border:1px solid #d1d5db;">
+      <option value="">Tous</option>
+      <option value="need">Besoin de greffe</option>
+      <option value="had">A subi une greffe</option>
+    </select>
+
+    <input id="organ" type="text" placeholder="Organe (optionnel)" style="padding:8px; border-radius:6px; border:1px solid #d1d5db;" />
+
+    <input id="date_from" type="date" style="padding:8px; border-radius:6px; border:1px solid #d1d5db;" />
+    <input id="date_to" type="date" style="padding:8px; border-radius:6px; border:1px solid #d1d5db;" />
 
     <button id="searchBtn" class="btn-primary">Rechercher</button>
   </div>
 
-  <div id="results" class="results">
+  <div id="results" class="results" style="margin-top:16px;">
     <div class="empty">Aucune recherche encore effectuée.</div>
   </div>
 </section>
 
 <script>
-document.getElementById('searchBtn').addEventListener('click', function () {
-  const status = document.querySelector('input[name="status"]:checked').value;
+const searchBtn = document.getElementById('searchBtn');
+function doSearch() {
+  const q = document.getElementById('q').value.trim();
+  const status = document.getElementById('status').value;
+  const organ = document.getElementById('organ').value.trim();
+  const dateFrom = document.getElementById('date_from').value;
+  const dateTo = document.getElementById('date_to').value;
+
   const url = new URL('{{ path('app_greffe_search') }}', window.location.origin);
+  if (q) url.searchParams.set('q', q);
   if (status) url.searchParams.set('status', status);
+  if (organ) url.searchParams.set('organ', organ);
+  if (dateFrom) url.searchParams.set('date_from', dateFrom);
+  if (dateTo) url.searchParams.set('date_to', dateTo);
 
   const resultsEl = document.getElementById('results');
   resultsEl.innerHTML = '<div class="loading">Chargement…</div>';
 
   fetch(url.toString(), { headers: { 'Accept': 'application/json' } })
-    .then(r => r.json())
+    .then(r => {
+      if (!r.ok) throw new Error('Network response was not ok');
+      return r.json();
+    })
     .then(data => {
       if (!Array.isArray(data) || data.length === 0) {
         resultsEl.innerHTML = '<div class="empty">Aucun résultat.</div>';
@@ -56,12 +67,12 @@ document.getElementById('searchBtn').addEventListener('click', function () {
         const card = document.createElement('article');
         card.className = 'card';
         card.innerHTML = `
-          <div class="card-main">
+          <div>
             <div class="card-title">${(p.nom||'')}, ${(p.prenom||'')}</div>
-            <div class="muted">ID: ${p.id||''} — ${p.date_naissance || ''}</div>
+            <div class="muted">ID: ${p.id||''} ${p.date_naissance ? '— Né(e): ' + p.date_naissance : ''}</div>
           </div>
           <div class="card-meta">
-            ${p.greffe ? '<div class="badge badge-success">Greffe: ' + (p.greffe.organ||'') + ' — ' + (p.greffe.date||'') + '</div>' : '<div class="badge">Pas de greffe</div>'}
+            ${p.greffe ? '<div class="badge badge-success">Greffe: ' + (p.greffe.organ||'') + (p.greffe.date ? ' — ' + p.greffe.date : '') + '</div>' : '<div class="badge">Pas de greffe</div>'}
           </div>
         `;
         list.appendChild(card);
@@ -73,6 +84,9 @@ document.getElementById('searchBtn').addEventListener('click', function () {
       console.error(err);
       resultsEl.innerHTML = '<div class="error">Erreur lors de la recherche.</div>';
     });
-});
+}
+
+searchBtn.addEventListener('click', doSearch);
+document.getElementById('q').addEventListener('keydown', function(e){ if(e.key === 'Enter') doSearch(); });
 </script>
 {% endblock %}
