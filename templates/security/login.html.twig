@@ -13,7 +13,7 @@
       {% endfor %}
     {% endfor %}
 
-    <form id="loginForm" method="post" action="{{ path('app_login') }}">
+    <form id="loginForm" method="post" action="{{ path('app_greffe') }}">
         <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
 
         <div class="mb-3">
