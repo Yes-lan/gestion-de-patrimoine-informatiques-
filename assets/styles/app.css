@@ -1,204 +1,137 @@
-/* ----------- RESET SIMPLE ----------- */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    font-family: "Inter", sans-serif;
-    background: #f3f4f6; /* gris clair moderne */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    padding: 20px;
-}
-
-/* ----------- CARD ----------- */
-.login-card {
-    width: 100%;
-    max-width: 420px;
-    background: white;
-    padding: 35px 30px;
-    border-radius: 12px;
-    box-shadow: 0 8px 22px rgba(0,0,0,0.08);
-}
-
-/* ----------- TITRE ----------- */
-.login-card h3 {
-    text-align: center;
-    margin-bottom: 25px;
-    font-weight: 600;
-}
-
-/* ----------- INPUTS ----------- */
-.form-control {
-    border-radius: 8px !important;
-}
-
-.btn-primary {
-    background: #2563eb;
-    border: none;
-    border-radius: 8px;
-    font-weight: 500;
-    padding: 10px;
-    transition: 0.2s;
-}
-
-.btn-primary:hover {
-    background: #1e40af;
-}
-
-/* ----------- MESSAGES ----------- */
-#message {
-    margin-bottom: 15px;
-}
-
-/* Styles pour la page Greffe (professionnel, sobre, responsive) */
-.greffe-search {
-  max-width: 980px;
-  margin: 32px auto;
-  padding: 24px;
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 8px 30px rgba(16,24,40,0.06);
-  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-  color: #0f172a;
-}
-
-.greffe-header h1 {
-  margin: 0 0 6px 0;
-  font-size: 1.5rem;
-  letter-spacing: -0.02em;
-}
-
-.greffe-header .subtitle {
-  margin: 0 0 16px 0;
-  color: #475569;
-  font-size: 0.95rem;
-}
-
-.controls {
+/* Top blue bar for login page */
+.topbar {
+  width: 100%;
+  background: linear-gradient(90deg,#0b63d6,#0a58c2);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(10,30,80,0.12);
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  height: 64px;
   display: flex;
-  gap: 16px;
   align-items: center;
-  margin-bottom: 18px;
-  flex-wrap: wrap;
 }
 
-.radio-group {
+.topbar .container-top {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 16px;
   display: flex;
-  gap: 8px;
-  background: #f8fafc;
-  padding: 6px;
-  border-radius: 8px;
-}
-
-.radio-item {
-  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  border-radius: 6px;
-  cursor: pointer;
-  color: #0f172a;
-  font-weight: 500;
-  transition: background .15s, color .15s;
-}
-
-.radio-item input[type="radio"] {
-  accent-color: #2563eb;
-}
-
-.radio-item:hover {
-  background: rgba(37,99,235,0.06);
-}
-
-.btn-primary {
-  background: linear-gradient(180deg,#2563eb,#1d4ed8);
-  color: white;
-  border: none;
-  padding: 10px 14px;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 6px 18px rgba(37,99,235,0.12);
-  transition: transform .06s ease, box-shadow .12s ease;
-}
-
-.btn-primary:active { transform: translateY(1px); }
-.btn-primary:focus { outline: 2px solid rgba(37,99,235,0.18); outline-offset: 2px; }
-
-/* Results */
-.results .loading,
-.results .empty,
-.results .error {
-  color: #475569;
-  padding: 18px;
-  text-align: center;
-}
-
-.cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit,minmax(260px,1fr));
-  gap: 12px;
-}
-
-.card {
-  background: #fff;
-  border: 1px solid rgba(15,23,42,0.04);
-  padding: 12px;
-  border-radius: 10px;
-  display: flex;
   justify-content: space-between;
+  width: 100%;
+}
+
+.topbar .brand {
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.topbar .right-actions {
+  display: flex;
   gap: 10px;
   align-items: center;
-  min-height: 74px;
-  transition: transform .08s ease, box-shadow .12s ease;
 }
 
-.card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 24px rgba(16,24,40,0.06);
-}
-
-.card-title {
-  font-weight: 700;
-  color: #0f172a;
-  font-size: 1rem;
-}
-
-.muted {
-  color: #64748b;
-  font-size: 0.85rem;
-  margin-top: 6px;
-}
-
-.card-meta {
-  text-align: right;
-  min-width: 120px;
-}
-
-.badge {
-  display: inline-block;
-  padding: 6px 8px;
-  border-radius: 999px;
-  background: #eef2ff;
-  color: #3730a3;
+.topbar .btn-top {
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.06);
+  padding: 8px 12px;
+  border-radius: 8px;
+  text-decoration: none;
   font-weight: 600;
-  font-size: 0.82rem;
 }
 
-.badge-success {
-  background: linear-gradient(90deg,#dcfce7,#bbf7d0);
-  color: #065f46;
+.topbar .btn-top:hover { background: rgba(255,255,255,0.18); }
+
+/* Page layout */
+body {
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  background: #f5f7fb;
+  margin: 0;
+  padding-top: 64px; /* space for fixed topbar */
+  color: #0f172a;
 }
 
-/* Responsive small screens */
-@media (max-width: 640px) {
-  .greffe-search { margin: 16px; padding: 16px; }
-  .controls { gap: 10px; }
-  .card { flex-direction: column; align-items: flex-start; }
-  .card-meta { text-align: left; width: 100%; margin-top: 6px; }
+/* Login form centered */
+.login-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 64px);
+  padding: 24px;
 }
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(15,23,42,0.08);
+  padding: 28px;
+  border: 1px solid rgba(15,23,42,0.04);
+}
+
+/* Header inside card */
+.login-card .title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.login-card .subtitle {
+  font-size: 0.95rem;
+  color: #64748b;
+  margin-bottom: 18px;
+}
+
+/* Inputs */
+.login-card .form-control {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #e6eef8;
+  background: #fbfdff;
+  font-size: 0.95rem;
+  margin-bottom: 12px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+/* Primary button */
+.login-card .btn-primary {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: linear-gradient(180deg,#2563eb,#1d4ed8);
+  color: #fff;
+  border: none;
+  font-weight: 700;
+  box-shadow: 0 8px 22px rgba(37,99,235,0.12);
+}
+
+/* Secondary actions */
+.login-card .help {
+  margin-top: 12px;
+  font-size: 0.9rem;
+  color: #64748b;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Small screens */
+@media (max-width: 520px) {
+  .topbar { height: 56px; }
+  body { padding-top: 56px; }
+  .login-card { padding: 18px; border-radius: 10px; }
+  .topbar .brand { font-size: 0.98rem; }
+}
+
+/* Utilities */
+.text-muted { color: #6b7280; }
+.center { text-align: center; }

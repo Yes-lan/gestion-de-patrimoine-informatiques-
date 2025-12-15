@@ -4,89 +4,112 @@
 {% block title %}Recherche Greffe{% endblock %}
 
 {% block body %}
-<section class="greffe-search">
-  <header class="greffe-header">
-    <h1>Recherche patients</h1>
-    <p class="subtitle">Barre de recherche par nom/prénom + filtres (status, organe, plage de dates).</p>
-  </header>
+<div class="card shadow-sm">
+  <div class="card-body">
+    <h5 class="card-title mb-3">Recherche de patients</h5>
 
-  <div class="controls">
-    <input id="q" type="search" placeholder="Nom ou prénom..." style="flex:1; padding:8px 10px; border-radius:6px; border:1px solid #d1d5db;" />
+    <form id="greffeForm" class="row g-2 align-items-end">
+      <div class="col-md-5">
+        <label class="form-label visually-hidden" for="q">Nom ou prénom</label>
+        <input id="q" name="q" type="search" class="form-control" placeholder="Nom ou prénom">
+      </div>
 
-    <select id="status" style="padding:8px; border-radius:6px; border:1px solid #d1d5db;">
-      <option value="">Tous</option>
-      <option value="need">Besoin de greffe</option>
-      <option value="had">A subi une greffe</option>
-    </select>
+      <div class="col-md-2">
+        <label class="form-label visually-hidden" for="status">Statut</label>
+        <select id="status" name="status" class="form-select">
+          <option value="">Tous</option>
+          <option value="need">Besoin de greffe</option>
+          <option value="had">A subi une greffe</option>
+        </select>
+      </div>
 
-    <input id="organ" type="text" placeholder="Organe (optionnel)" style="padding:8px; border-radius:6px; border:1px solid #d1d5db;" />
+      <div class="col-md-3">
+        <label class="form-label visually-hidden" for="organ">Organe</label>
+        <input id="organ" name="organ" type="text" class="form-control" placeholder="Organe (optionnel)">
+      </div>
 
-    <input id="date_from" type="date" style="padding:8px; border-radius:6px; border:1px solid #d1d5db;" />
-    <input id="date_to" type="date" style="padding:8px; border-radius:6px; border:1px solid #d1d5db;" />
+      <div class="col-md-2 d-grid">
+        <button id="searchBtn" type="button" class="btn btn-primary">Rechercher</button>
+      </div>
 
-    <button id="searchBtn" class="btn-primary">Rechercher</button>
+      <div class="col-6 col-md-3">
+        <label class="form-label" for="date_from">Date from</label>
+        <input id="date_from" name="date_from" type="date" class="form-control">
+      </div>
+
+      <div class="col-6 col-md-3">
+        <label class="form-label" for="date_to">Date to</label>
+        <input id="date_to" name="date_to" type="date" class="form-control">
+      </div>
+    </form>
   </div>
+</div>
 
-  <div id="results" class="results" style="margin-top:16px;">
-    <div class="empty">Aucune recherche encore effectuée.</div>
-  </div>
-</section>
+<div id="results" class="mt-4"></div>
 
+{% block scripts %}
+{{ parent() }}
 <script>
-const searchBtn = document.getElementById('searchBtn');
-function doSearch() {
-  const q = document.getElementById('q').value.trim();
-  const status = document.getElementById('status').value;
-  const organ = document.getElementById('organ').value.trim();
-  const dateFrom = document.getElementById('date_from').value;
-  const dateTo = document.getElementById('date_to').value;
-
-  const url = new URL('{{ path('app_greffe_search') }}', window.location.origin);
-  if (q) url.searchParams.set('q', q);
-  if (status) url.searchParams.set('status', status);
-  if (organ) url.searchParams.set('organ', organ);
-  if (dateFrom) url.searchParams.set('date_from', dateFrom);
-  if (dateTo) url.searchParams.set('date_to', dateTo);
-
+(function(){
+  const api = '{{ path('app_greffe_search') }}';
+  const searchBtn = document.getElementById('searchBtn');
   const resultsEl = document.getElementById('results');
-  resultsEl.innerHTML = '<div class="loading">Chargement…</div>';
 
-  fetch(url.toString(), { headers: { 'Accept': 'application/json' } })
-    .then(r => {
-      if (!r.ok) throw new Error('Network response was not ok');
-      return r.json();
-    })
-    .then(data => {
-      if (!Array.isArray(data) || data.length === 0) {
-        resultsEl.innerHTML = '<div class="empty">Aucun résultat.</div>';
-        return;
-      }
-      const list = document.createElement('div');
-      list.className = 'cards';
-      data.forEach(p => {
-        const card = document.createElement('article');
-        card.className = 'card';
-        card.innerHTML = `
-          <div>
-            <div class="card-title">${(p.nom||'')}, ${(p.prenom||'')}</div>
-            <div class="muted">ID: ${p.id||''} ${p.date_naissance ? '— Né(e): ' + p.date_naissance : ''}</div>
+  function renderEmpty(text){ resultsEl.innerHTML = '<div class="alert alert-secondary">'+text+'</div>'; }
+  function renderError(text){ resultsEl.innerHTML = '<div class="alert alert-danger">'+text+'</div>'; }
+
+  function renderCards(items){
+    if(!Array.isArray(items) || items.length===0){ renderEmpty('Aucun résultat.'); return; }
+    const row = document.createElement('div');
+    row.className = 'row g-3';
+    items.forEach(p=>{
+      const col = document.createElement('div');
+      col.className = 'col-md-4';
+      const card = document.createElement('div');
+      card.className = 'card h-100';
+      card.innerHTML = `
+        <div class="card-body d-flex flex-column">
+          <h6 class="card-title mb-1">${(p.nom||'')}${p.prenom? ' ' + p.prenom : ''}</h6>
+          <p class="text-muted small mb-2">ID: ${p.id||''}${p.date_naissance? ' — Né(e): '+p.date_naissance : ''}</p>
+          <div class="mt-auto">
+            ${p.greffe ? '<span class="badge bg-success">Greffe: '+(p.greffe.organ||'')+'</span> <small class="text-muted ms-2">'+(p.greffe.date||'')+'</small>' : '<span class="badge bg-secondary">Pas de greffe</span>'}
           </div>
-          <div class="card-meta">
-            ${p.greffe ? '<div class="badge badge-success">Greffe: ' + (p.greffe.organ||'') + (p.greffe.date ? ' — ' + p.greffe.date : '') + '</div>' : '<div class="badge">Pas de greffe</div>'}
-          </div>
-        `;
-        list.appendChild(card);
-      });
-      resultsEl.innerHTML = '';
-      resultsEl.appendChild(list);
-    })
-    .catch(err => {
-      console.error(err);
-      resultsEl.innerHTML = '<div class="error">Erreur lors de la recherche.</div>';
+        </div>
+      `;
+      col.appendChild(card);
+      row.appendChild(col);
     });
-}
+    resultsEl.innerHTML = '';
+    resultsEl.appendChild(row);
+  }
 
-searchBtn.addEventListener('click', doSearch);
-document.getElementById('q').addEventListener('keydown', function(e){ if(e.key === 'Enter') doSearch(); });
+  function doSearch(){
+    const params = new URLSearchParams();
+    const q = document.getElementById('q').value.trim();
+    const status = document.getElementById('status').value;
+    const organ = document.getElementById('organ').value.trim();
+    const dateFrom = document.getElementById('date_from').value;
+    const dateTo = document.getElementById('date_to').value;
+    if(q) params.set('q', q);
+    if(status) params.set('status', status);
+    if(organ) params.set('organ', organ);
+    if(dateFrom) params.set('date_from', dateFrom);
+    if(dateTo) params.set('date_to', dateTo);
+
+    resultsEl.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+
+    fetch(api + '?' + params.toString(), { headers: { 'Accept': 'application/json' } })
+      .then(r => {
+        if(!r.ok) throw new Error('Network error');
+        return r.json();
+      })
+      .then(renderCards)
+      .catch(e => { console.error(e); renderError('Erreur lors de la recherche.'); });
+  }
+
+  searchBtn.addEventListener('click', doSearch);
+  document.getElementById('q').addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); doSearch(); }});
+})();
 </script>
+{% endblock %}
 {% endblock %}

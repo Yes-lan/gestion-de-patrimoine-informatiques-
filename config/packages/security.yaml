@@ -1,11 +1,9 @@
 security:
-    # https://symfony.com/doc/current/security.html#registering-the-user-hashing-passwords
+    # password hashers (Symfony >=5.3 uses "password_hashers")
     password_hashers:
         Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
 
-    # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
     providers:
-        # used to reload user from session & other features (e.g. switch_user)
         app_user_provider:
             entity:
                 class: App\Entity\User
@@ -13,43 +11,27 @@ security:
 
     firewalls:
         dev:
-            # Ensure dev tools and static assets are always allowed
-            pattern: ^/(_profiler|_wdt|assets|build)/
+            pattern: ^/(_(profiler|wdt)|css|images|js|build)/
             security: false
+
         main:
             lazy: true
             provider: app_user_provider
+
             form_login:
-                # conserver login_path/check_path existants
                 login_path: app_login
                 check_path: app_login
-                # rediriger vers /greffe après login
-                default_target_path: /greffe
-                always_use_default_target_path: true
-                enable_csrf: true
+                default_target_path: app_greffe
+
             logout:
                 path: app_logout
-                # where to redirect after logout
-                # target: app_any_route
 
-            # Activate different ways to authenticate:
-            # https://symfony.com/doc/current/security.html#the-firewall
-
-            # https://symfony.com/doc/current/security/impersonating_user.html
-            # switch_user: true
-
-    # Note: Only the *first* matching rule is applied
     access_control:
-        # - { path: ^/admin, roles: ROLE_ADMIN }
-        # - { path: ^/profile, roles: ROLE_USER }
+        # permettre l'accès public aux ressources publiques et à la page de login/logout
+        - { path: ^/(_(profiler|wdt)|css|images|js|build)/, roles: PUBLIC_ACCESS }
+        - { path: ^/login$, roles: PUBLIC_ACCESS }
+        - { path: ^/login, roles: PUBLIC_ACCESS }
+        - { path: ^/logout$, roles: PUBLIC_ACCESS }
 
-when@test:
-    security:
-        password_hashers:
-            # Password hashers are resource-intensive by design to ensure security.
-            # In tests, it's safe to reduce their cost to improve performance.
-            Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
-                algorithm: auto
-                cost: 4 # Lowest possible value for bcrypt
-                time_cost: 3 # Lowest possible value for argon
-                memory_cost: 10 # Lowest possible value for argon
+        # tout le reste nécessite ROLE_USER
+        - { path: ^/, roles: ROLE_USER }
