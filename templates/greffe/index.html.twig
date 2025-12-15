@@ -4,24 +4,35 @@
 {% block title %}Recherche Greffe{% endblock %}
 
 {% block body %}
-<h1>Recherche de patients (greffe)</h1>
+<section class="greffe-search">
+  <header class="greffe-header">
+    <h1>Recherche de patients — Greffe</h1>
+    <p class="subtitle">Filtrer rapidement les patients ayant besoin d'une greffe ou ayant déjà subi une greffe.</p>
+  </header>
 
-<div>
-  <label>
-    <input type="radio" name="status" value="" checked> Tous
-  </label>
-  <label>
-    <input type="radio" name="status" value="need"> Besoin de greffe
-  </label>
-  <label>
-    <input type="radio" name="status" value="had"> A subi une greffe
-  </label>
-  <button id="searchBtn">Rechercher</button>
-</div>
+  <div class="controls">
+    <div class="radio-group" role="radiogroup" aria-label="Filtre greffe">
+      <label class="radio-item">
+        <input type="radio" name="status" value="" checked>
+        <span>Tous</span>
+      </label>
+      <label class="radio-item">
+        <input type="radio" name="status" value="need">
+        <span>Besoin de greffe</span>
+      </label>
+      <label class="radio-item">
+        <input type="radio" name="status" value="had">
+        <span>A subi une greffe</span>
+      </label>
+    </div>
 
-<div id="results" style="margin-top:1rem;">
-  <em>Aucune recherche encore effectuée.</em>
-</div>
+    <button id="searchBtn" class="btn-primary">Rechercher</button>
+  </div>
+
+  <div id="results" class="results">
+    <div class="empty">Aucune recherche encore effectuée.</div>
+  </div>
+</section>
 
 <script>
 document.getElementById('searchBtn').addEventListener('click', function () {
@@ -29,32 +40,38 @@ document.getElementById('searchBtn').addEventListener('click', function () {
   const url = new URL('{{ path('app_greffe_search') }}', window.location.origin);
   if (status) url.searchParams.set('status', status);
 
-  document.getElementById('results').innerHTML = 'Chargement…';
+  const resultsEl = document.getElementById('results');
+  resultsEl.innerHTML = '<div class="loading">Chargement…</div>';
 
   fetch(url.toString(), { headers: { 'Accept': 'application/json' } })
     .then(r => r.json())
     .then(data => {
       if (!Array.isArray(data) || data.length === 0) {
-        document.getElementById('results').innerHTML = '<div>Aucun résultat.</div>';
+        resultsEl.innerHTML = '<div class="empty">Aucun résultat.</div>';
         return;
       }
       const list = document.createElement('div');
+      list.className = 'cards';
       data.forEach(p => {
-        const item = document.createElement('div');
-        item.style.borderBottom = '1px solid #ddd';
-        item.style.padding = '8px 0';
-        item.innerHTML = '<strong>' + (p.nom||'') + ' ' + (p.prenom||'') + '</strong>'
-          + ' — ID: ' + (p.id||'')
-          + (p.date_naissance ? ' — Né(e): ' + p.date_naissance : '')
-          + (p.greffe ? '<br>Greffe: ' + (p.greffe.organ||'') + ' le ' + (p.greffe.date||'') : ' — Pas de greffe');
-        list.appendChild(item);
+        const card = document.createElement('article');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="card-main">
+            <div class="card-title">${(p.nom||'')}, ${(p.prenom||'')}</div>
+            <div class="muted">ID: ${p.id||''} — ${p.date_naissance || ''}</div>
+          </div>
+          <div class="card-meta">
+            ${p.greffe ? '<div class="badge badge-success">Greffe: ' + (p.greffe.organ||'') + ' — ' + (p.greffe.date||'') + '</div>' : '<div class="badge">Pas de greffe</div>'}
+          </div>
+        `;
+        list.appendChild(card);
       });
-      document.getElementById('results').innerHTML = '';
-      document.getElementById('results').appendChild(list);
+      resultsEl.innerHTML = '';
+      resultsEl.appendChild(list);
     })
     .catch(err => {
       console.error(err);
-      document.getElementById('results').innerHTML = '<div class="error">Erreur lors de la recherche.</div>';
+      resultsEl.innerHTML = '<div class="error">Erreur lors de la recherche.</div>';
     });
 });
 </script>
