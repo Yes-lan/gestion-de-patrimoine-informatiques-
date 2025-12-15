@@ -7,35 +7,41 @@
 
     <div id="message"></div>
 
-    <form id="loginForm" method="post" action={{ path('app_greffe') }}>
+    {% for label, messages in app.flashes %}
+      {% for message in messages %}
+        <div class="alert alert-{{ label == 'danger' ? 'danger' : (label == 'warning' ? 'warning' : 'info') }}">{{ message }}</div>
+      {% endfor %}
+    {% endfor %}
+
+    <form id="loginForm" method="post" action="{{ path('app_login') }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
         <div class="mb-3">
             <label for="username" class="form-label">Email</label>
             <input 
-                type="text" 
-                name="_username"
-                id="username"
-                class="form-control"
-                value="{{ last_username }}"
-                required
+                id="username" 
+                name="_username" 
+                class="form-control" 
+                value="{{ last_username|default('') }}" 
+                required 
+                autofocus
             >
         </div>
 
         <div class="mb-3">
             <label for="password" class="form-label">Mot de passe</label>
             <input 
+                id="password" 
+                name="_password" 
                 type="password" 
-                name="_password"
-                id="password"
-                class="form-control"
+                class="form-control" 
                 required
             >
         </div>
 
-        <button type="submit" class="btn btn-primary w-100">
+        <button class="btn btn-primary" type="submit">
             Se connecter
         </button>
-
-        <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
     </form>
 </div>
 

@@ -22,16 +22,17 @@ security:
                 login_path: app_login
                 check_path: app_login
                 default_target_path: app_greffe
+                always_use_default_target_path: true
 
             logout:
                 path: app_logout
 
     access_control:
-        # permettre l'accès public aux ressources publiques et à la page de login/logout
+    
+        # assets + login/logout accessibles publiquement
         - { path: ^/(_(profiler|wdt)|css|images|js|build)/, roles: PUBLIC_ACCESS }
         - { path: ^/login$, roles: PUBLIC_ACCESS }
-        - { path: ^/login, roles: PUBLIC_ACCESS }
         - { path: ^/logout$, roles: PUBLIC_ACCESS }
 
-        # tout le reste nécessite ROLE_USER
+        # le reste requiert authentification (ROLE_USER)
         - { path: ^/, roles: ROLE_USER }
