@@ -21,8 +21,7 @@ security:
             form_login:
                 login_path: app_login
                 check_path: app_login
-                default_target_path: app_greffe
-                always_use_default_target_path: true
+                success_handler: App\Security\LoginSuccessHandler
 
             logout:
                 path: app_logout
@@ -33,6 +32,5 @@ security:
         - { path: ^/(_(profiler|wdt)|css|images|js|build)/, roles: PUBLIC_ACCESS }
         - { path: ^/login$, roles: PUBLIC_ACCESS }
         - { path: ^/logout$, roles: PUBLIC_ACCESS }
-
-        # le reste requiert authentification (ROLE_USER)
-        # - { path: ^/, roles: ROLE_USER }    # <-- supprimée ou commentée
+        - { path: ^/, roles: ROLE_USER }
+        - { path: ^/admin, roles: ROLE_ADMIN }

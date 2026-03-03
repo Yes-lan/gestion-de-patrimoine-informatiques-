@@ -1,0 +1,173 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Créer un Patient{% endblock %}
+
+{% block body %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Créer un Nouveau Patient</h4>
+                </div>
+                <div class="card-body">
+                    {% for label, messages in app.flashes %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ label == 'danger' ? 'danger' : 'success' }} alert-dismissible fade show">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endfor %}
+
+                    <form method="POST" action="{{ path('patient_create') }}">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Nom <span class="text-danger">*</span></label>
+                            <input 
+                                type="text" 
+                                class="form-control" 
+                                id="name" 
+                                name="name" 
+                                placeholder="Ex: Dupont"
+                                required
+                            >
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="firstName" class="form-label">Prénom <span class="text-danger">*</span></label>
+                            <input 
+                                type="text" 
+                                class="form-control" 
+                                id="firstName" 
+                                name="firstName" 
+                                placeholder="Ex: Jean"
+                                required
+                            >
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="ville" class="form-label">Ville <span class="text-danger">*</span></label>
+                            <input 
+                                type="text" 
+                                class="form-control" 
+                                id="ville" 
+                                name="ville" 
+                                placeholder="Ex: Paris"
+                                required
+                            >
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="status" class="form-label">État du Patient <span class="text-danger">*</span></label>
+                            <div>
+                                <div class="form-check">
+                                    <input 
+                                        class="form-check-input" 
+                                        type="radio" 
+                                        name="isAlive" 
+                                        id="alive" 
+                                        value="1"
+                                        required
+                                    >
+                                    <label class="form-check-label" for="alive">
+                                        Vivant
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input 
+                                        class="form-check-input" 
+                                        type="radio" 
+                                        name="isAlive" 
+                                        id="deceased" 
+                                        value="0"
+                                        required
+                                    >
+                                    <label class="form-check-label" for="deceased">
+                                        Décédé
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input 
+                                    class="form-check-input" 
+                                    type="checkbox" 
+                                    id="receiveGreffe" 
+                                    name="receiveGreffe"
+                                    onchange="toggleGreffeFields()"
+                                >
+                                <label class="form-check-label" for="receiveGreffe">
+                                    Patient destiné à recevoir une greffe
+                                </label>
+                            </div>
+                        </div>
+
+                        <div id="greffeFields" style="display: none;">
+                            <div class="mb-3">
+                                <label for="greffeType" class="form-label">Type de Greffe</label>
+                                <select 
+                                    class="form-select" 
+                                    id="greffeType" 
+                                    name="greffeType"
+                                >
+                                    <option value="">-- Sélectionner un type --</option>
+                                    <option value="Cœur">Cœur</option>
+                                    <option value="Foie">Foie</option>
+                                    <option value="Rein">Rein</option>
+                                    <option value="Poumon">Poumon</option>
+                                    <option value="Pancréas">Pancréas</option>
+                                    <option value="Cornée">Cornée</option>
+                                    <option value="Peau">Peau</option>
+                                    <option value="Intestin">Intestin</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-check-circle"></i> Créer le Patient
+                            </button>
+                            <a href="{{ path('app_greffe') }}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Retour à la Recherche
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border: none;
+        border-radius: 0.5rem;
+    }
+    
+    .form-label {
+        font-weight: 500;
+        color: #333;
+    }
+    
+    .text-danger {
+        font-weight: bold;
+    }
+</style>
+
+<script>
+    function toggleGreffeFields() {
+        const receiveGreffe = document.getElementById('receiveGreffe').checked;
+        const greffeFields = document.getElementById('greffeFields');
+        const greffeType = document.getElementById('greffeType');
+        
+        if (receiveGreffe) {
+            greffeFields.style.display = 'block';
+        } else {
+            greffeFields.style.display = 'none';
+            greffeType.value = ''; // Reset the selection
+        }
+    }
+</script>
+{% endblock %}

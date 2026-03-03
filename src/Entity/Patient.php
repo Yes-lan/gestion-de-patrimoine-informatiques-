@@ -24,8 +24,8 @@ class Patient
     #[ORM\Column(length: 255)]
     private ?string $Ville = null;
 
-    #[ORM\Column]
-    private ?int $Num_Dossier = null;
+    #[ORM\Column(type: 'boolean', nullable: true)]
+    private ?bool $alive = null;
 
     /**
      * @var Collection<int, Greffe>
@@ -79,14 +79,14 @@ class Patient
         return $this;
     }
 
-    public function getNumDossier(): ?int
+    public function isAlive(): ?bool
     {
-        return $this->Num_Dossier;
+        return $this->alive;
     }
 
-    public function setNumDossier(int $Num_Dossier): static
+    public function setIsAlive(?bool $alive): static
     {
-        $this->Num_Dossier = $Num_Dossier;
+        $this->alive = $alive;
 
         return $this;
     }
