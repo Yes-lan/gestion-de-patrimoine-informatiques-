@@ -33,25 +33,69 @@
       </div>
 
       <div class="col-6 col-md-3">
-        <label class="form-label" for="date_from">Date from</label>
+        <label class="form-label" for="date_from">Depuis</label>
         <input id="date_from" name="date_from" type="date" class="form-control">
       </div>
 
       <div class="col-6 col-md-3">
-        <label class="form-label" for="date_to">Date to</label>
+        <label class="form-label" for="date_to">jusqu'à</label>
         <input id="date_to" name="date_to" type="date" class="form-control">
       </div>
     </form>
   </div>
 </div>
 
-<div id="results" class="mt-4"></div>
+<div id="results" class="mt-4">
+  {# render initial patients if passed from controller #}
+  {% if patients is defined %}
+    {% if patients is empty %}
+      <div class="alert alert-secondary">Aucun résultat.</div>
+    {% else %}
+      <div class="row g-3">
+        {% for p in patients %}
+          <div class="col-md-4">
+            <div class="card h-100">
+              <div class="card-body d-flex flex-column">
+                <h6 class="card-title mb-1"><a href="{{ path('patient_show', {'id': p.id}) }}">{{ p.name }} {{ p.firstName }}</a></h6>
+                <p class="text-muted small mb-2">ID: {{ p.id }}</p>
+                <div class="mt-auto">
+                  {% set greffe = p.greffes|first %}
+                  {% if greffe %}
+                    <span class="badge bg-success">Greffe: {{ greffe.type }}</span>
+                    <small class="text-muted ms-2">{{ greffe.dateFinDeFonction|date('Y-m-d') }}</small>
+                  {% else %}
+                    <span class="badge bg-secondary">Pas de greffe</span>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      {# pagination links #}
+      {% if total_pages > 1 %}
+        <nav aria-label="Page navigation" class="mt-4">
+          <ul class="pagination">
+            {% if current_page > 1 %}
+              <li class="page-item"><a class="page-link" href="{{ path('app_greffe', {page: current_page-1}) }}">Précédent</a></li>
+            {% endif %}
+            <li class="page-item disabled"><span class="page-link">Page {{ current_page }}/{{ total_pages }}</span></li>
+            {% if current_page < total_pages %}
+              <li class="page-item"><a class="page-link" href="{{ path('app_greffe', {page: current_page+1}) }}">Suivant</a></li>
+            {% endif %}
+          </ul>
+        </nav>
+      {% endif %}
+    {% endif %}
+  {% endif %}
+</div>
 
 {% block scripts %}
 {{ parent() }}
 <script>
 (function(){
-  const api = '{{ path('app_greffe_search') }}';
+  const api = '{{ path('app_greffe') }}';
   const searchBtn = document.getElementById('searchBtn');
   const resultsEl = document.getElementById('results');
 
@@ -62,17 +106,35 @@
     if(!Array.isArray(items) || items.length===0){ renderEmpty('Aucun résultat.'); return; }
     const row = document.createElement('div');
     row.className = 'row g-3';
-    items.forEach(p=>{
+      items.forEach(p=>{
       const col = document.createElement('div');
       col.className = 'col-md-4';
       const card = document.createElement('div');
       card.className = 'card h-100';
+      // prepare greffes HTML (support both `greffes` array and legacy `greffe` single)
+      let greffesHtml = '';
+      if (Array.isArray(p.greffes) && p.greffes.length) {
+        greffesHtml = '<ul class="list-unstyled mb-0">';
+        p.greffes.forEach(g => {
+          const organ = (g.type || g.organ || '');
+          const date = (g.date || g.dateFinDeFonction || '');
+          greffesHtml += `<li><span class="badge bg-success me-2">${organ}</span><small class="text-muted">${date}</small></li>`;
+        });
+        greffesHtml += '</ul>';
+      } else if (p.greffe) {
+        const organ = (p.greffe.type || p.greffe.organ || '');
+        const date = (p.greffe.date || p.greffe.dateFinDeFonction || '');
+        greffesHtml = `<span class="badge bg-success">Greffe: ${organ}</span> <small class="text-muted ms-2">${date}</small>`;
+      } else {
+        greffesHtml = '<span class="badge bg-secondary">Pas de greffe</span>';
+      }
+
       card.innerHTML = `
         <div class="card-body d-flex flex-column">
-          <h6 class="card-title mb-1">${(p.nom||'')}${p.prenom? ' ' + p.prenom : ''}</h6>
-          <p class="text-muted small mb-2">ID: ${p.id||''}${p.date_naissance? ' — Né(e): '+p.date_naissance : ''}</p>
+          <h6 class="card-title mb-1"><a href="/patient/${p.id}">${(p.name||p.nom||'')}${(p.firstName||p.prenom)? ' ' + (p.firstName||p.prenom) : ''}</a></h6>
+          <p class="text-muted small mb-2">ID: ${p.id||''}${p.date_naissance? ' — Né(e): '+(p.date_naissance||'') : ''}</p>
           <div class="mt-auto">
-            ${p.greffe ? '<span class="badge bg-success">Greffe: '+(p.greffe.organ||'')+'</span> <small class="text-muted ms-2">'+(p.greffe.date||'')+'</small>' : '<span class="badge bg-secondary">Pas de greffe</span>'}
+            ${greffesHtml}
           </div>
         </div>
       `;

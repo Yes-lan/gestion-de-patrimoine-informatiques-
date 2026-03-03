@@ -35,4 +35,4 @@ security:
         - { path: ^/logout$, roles: PUBLIC_ACCESS }
 
         # le reste requiert authentification (ROLE_USER)
-        - { path: ^/, roles: ROLE_USER }
+        # - { path: ^/, roles: ROLE_USER }    # <-- supprimée ou commentée

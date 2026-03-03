@@ -1,0 +1,30 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Patient {{ patient.name }} {{ patient.firstName }}{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+  <h1>Patient: {{ patient.name }} {{ patient.firstName }}</h1>
+  <ul class="list-group mb-3">
+    <li class="list-group-item"><strong>Numéro dossier:</strong> {{ patient.numDossier }}</li>
+    <li class="list-group-item"><strong>Ville:</strong> {{ patient.ville }}</li>
+  </ul>
+
+  <h2>Greffes</h2>
+  {% if patient.greffes is empty %}
+    <p>Aucune greffe enregistrée pour ce patient.</p>
+  {% else %}
+    <div class="list-group">
+      {% for g in patient.greffes %}
+        <div class="list-group-item">
+          <strong>Type:</strong> {{ g.type }}<br>
+          <strong>Fonctionnel:</strong> {{ g.fonctionnel ? 'Oui' : 'Non' }}<br>
+          <strong>Date fin de fonction:</strong> {{ g.dateFinDeFonction ? g.dateFinDeFonction|date('Y-m-d') : '-' }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <a class="btn btn-secondary mt-3" href="{{ path('app_greffe') }}">Retour à la liste</a>
+</div>
+{% endblock %}

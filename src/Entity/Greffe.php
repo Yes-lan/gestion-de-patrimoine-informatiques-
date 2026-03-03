@@ -13,6 +13,10 @@ class Greffe
     #[ORM\Column]
     private ?int $id = null;
 
+    #[ORM\ManyToOne(targetEntity: Patient::class)]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?Patient $patient = null;
+
     #[ORM\Column]
     private ?bool $Fonctionnel = null;
 
@@ -59,6 +63,18 @@ class Greffe
     public function setType(string $Type): static
     {
         $this->Type = $Type;
+
+        return $this;
+    }
+
+    public function getPatient(): ?Patient
+    {
+        return $this->patient;
+    }
+
+    public function setPatient(?Patient $patient): static
+    {
+        $this->patient = $patient;
 
         return $this;
     }

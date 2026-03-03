@@ -10,8 +10,8 @@ use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 
 final class SecurityController extends AbstractController
 {
-    #[Route(path: '/login', name: 'app_login')]
-    public function login(AuthenticationUtils $authenticationUtils, UserRepository $userRepository): Response
+    #[Route(path: '/login', name: 'app_login', methods: ['GET', 'POST'])]
+    public function login(AuthenticationUtils $authenticationUtils): Response
     {
         if ($this->getUser()) {
             return $this->redirectToRoute('app_greffe');
@@ -21,21 +21,7 @@ final class SecurityController extends AbstractController
         $lastUsername = $authenticationUtils->getLastUsername();
 
         if ($error) {
-            try {
-                $user = $lastUsername ? $userRepository->findOneBy(['email' => $lastUsername]) : null;
-            } catch (\Throwable $e) {
-                $this->addFlash('danger', 'Erreur interne, réessayez plus tard.');
-                return $this->render('security/login.html.twig', [
-                    'last_username' => $lastUsername,
-                    'error' => $error,
-                ]);
-            }
-
-            if (! $user) {
-                $this->addFlash('danger', "Identifiant incorrect — utilisateur introuvable.");
-            } else {
-                $this->addFlash('danger', "Mot de passe incorrect.");
-            }
+            $this->addFlash('danger', 'Identifiants invalides.');
         }
 
         return $this->render('security/login.html.twig', [
