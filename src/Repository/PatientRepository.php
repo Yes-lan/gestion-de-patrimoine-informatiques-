@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Patient;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -14,6 +15,37 @@ class PatientRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Patient::class);
+    }
+
+    /**
+     * @return int[]
+     */
+    public function findPatientIdsByCaregiver(User $user): array
+    {
+        $rows = $this->createQueryBuilder('p')
+            ->select('DISTINCT p.id AS id')
+            ->innerJoin('p.caregivers', 'c')
+            ->andWhere('c = :user')
+            ->setParameter('user', $user)
+            ->getQuery()
+            ->getArrayResult();
+
+        return array_map(static fn (array $row) => (int) $row['id'], $rows);
+    }
+
+    public function userCanAccessPatient(User $user, int $patientId): bool
+    {
+        $count = (int) $this->createQueryBuilder('p')
+            ->select('COUNT(DISTINCT p.id)')
+            ->innerJoin('p.caregivers', 'c')
+            ->andWhere('c = :user')
+            ->andWhere('p.id = :patientId')
+            ->setParameter('user', $user)
+            ->setParameter('patientId', $patientId)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $count > 0;
     }
 
     /**
@@ -37,6 +69,7 @@ class PatientRepository extends ServiceEntityRepository
         $organ = trim($criteria['organ'] ?? '');
         $dateFrom = trim($criteria['date_from'] ?? '');
         $dateTo = trim($criteria['date_to'] ?? '');
+        $allowedPatientIds = $criteria['allowed_patient_ids'] ?? null;
         $page = max(1, (int) ($criteria['page'] ?? 1));
         $perPage = (int) ($criteria['per_page'] ?? 20);
         
@@ -53,6 +86,21 @@ class PatientRepository extends ServiceEntityRepository
         if ($q !== '') {
             $conditions[] = "(LOWER(p.Name) LIKE :q OR LOWER(p.FirstName) LIKE :q)";
             $params['q'] = '%' . mb_strtolower($q) . '%';
+        }
+
+        if (is_array($allowedPatientIds)) {
+            if ($allowedPatientIds === []) {
+                return [
+                    'data' => [],
+                    'total' => 0,
+                    'page' => $page,
+                    'per_page' => $perPage,
+                    'total_pages' => 0,
+                ];
+            }
+
+            $conditions[] = 'p.id IN (:allowed_patient_ids)';
+            $params['allowed_patient_ids'] = array_map('intval', $allowedPatientIds);
         }
         
         // === FILTRE 2 : Statut greffe avec EXISTS (TRÈS PERFORMANT) ===
@@ -170,7 +218,11 @@ class PatientRepository extends ServiceEntityRepository
         
         $countQuery = $this->getEntityManager()->createQuery($countDql);
         foreach ($params as $key => $value) {
-            $countQuery->setParameter($key, $value);
+            if ($key === 'allowed_patient_ids') {
+                $countQuery->setParameter($key, $value);
+            } else {
+                $countQuery->setParameter($key, $value);
+            }
         }
         $total = (int) $countQuery->getSingleScalarResult();
         
@@ -179,7 +231,11 @@ class PatientRepository extends ServiceEntityRepository
         
         // Définir les paramètres
         foreach ($params as $key => $value) {
-            $query->setParameter($key, $value);
+            if ($key === 'allowed_patient_ids') {
+                $query->setParameter($key, $value);
+            } else {
+                $query->setParameter($key, $value);
+            }
         }
         
         // Appliquer la pagination

@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Greffe;
 use App\Entity\Patient;
+use App\Entity\User;
 use App\Repository\PatientRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -28,6 +29,15 @@ final class GreffeController extends AbstractController
             'page' => max(1, (int) $request->query->get('page', 1)),
             'per_page' => 20,
         ];
+
+        if (!$this->isGranted('ROLE_ADMIN')) {
+            $user = $this->getUser();
+            if ($user instanceof User) {
+                $criteria['allowed_patient_ids'] = $patientRepository->findPatientIdsByCaregiver($user);
+            } else {
+                $criteria['allowed_patient_ids'] = [];
+            }
+        }
 
         // Utiliser la méthode du repository qui gère tous les filtres avec EXISTS (optimisé)
         $result = $patientRepository->findByFilters($criteria);

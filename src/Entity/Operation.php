@@ -36,11 +36,11 @@ class Operation
     private int $nbInfirmieres = 0;
 
     /**
-     * @var Collection<int, Medecin>
+     * @var Collection<int, Chirurgien>
      */
-    #[ORM\ManyToMany(targetEntity: Medecin::class)]
-    #[ORM\JoinTable(name: 'operation_medecin')]
-    private Collection $medecins;
+    #[ORM\ManyToMany(targetEntity: Chirurgien::class)]
+    #[ORM\JoinTable(name: 'operation_chirurgien')]
+    private Collection $chirurgiens;
 
     /**
      * @var Collection<int, Infirmiere>
@@ -57,7 +57,7 @@ class Operation
 
     public function __construct()
     {
-        $this->medecins = new ArrayCollection();
+        $this->chirurgiens = new ArrayCollection();
         $this->infirmieres = new ArrayCollection();
         $this->rapports = new ArrayCollection();
         $this->dateOperation = new \DateTime();
@@ -141,25 +141,25 @@ class Operation
     }
 
     /**
-     * @return Collection<int, Medecin>
+     * @return Collection<int, Chirurgien>
      */
-    public function getMedecins(): Collection
+    public function getChirurgiens(): Collection
     {
-        return $this->medecins;
+        return $this->chirurgiens;
     }
 
-    public function addMedecin(Medecin $medecin): static
+    public function addChirurgien(Chirurgien $chirurgien): static
     {
-        if (!$this->medecins->contains($medecin)) {
-            $this->medecins->add($medecin);
+        if (!$this->chirurgiens->contains($chirurgien)) {
+            $this->chirurgiens->add($chirurgien);
         }
 
         return $this;
     }
 
-    public function removeMedecin(Medecin $medecin): static
+    public function removeChirurgien(Chirurgien $chirurgien): static
     {
-        $this->medecins->removeElement($medecin);
+        $this->chirurgiens->removeElement($chirurgien);
 
         return $this;
     }

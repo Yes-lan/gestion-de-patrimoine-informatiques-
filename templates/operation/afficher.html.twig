@@ -11,9 +11,9 @@
             <p class="mb-1"><strong>Patient :</strong> {{ operation.patient.name }} {{ operation.patient.firstName }}</p>
             <p class="mb-1"><strong>Date :</strong> {{ operation.dateOperation|date('d/m/Y H:i') }}</p>
             <p class="mb-1"><strong>Description :</strong> {{ operation.description ?: '—' }}</p>
-            <p class="mb-1"><strong>Nombre de médecins durant l'opération :</strong> {{ operation.nbMedecins }}</p>
+            <p class="mb-1"><strong>Nombre de chirurgiens durant l'opération :</strong> {{ operation.nbMedecins }}</p>
             <p class="mb-1"><strong>Nombre d'infirmières durant l'opération :</strong> {{ operation.nbInfirmieres }}</p>
-            <p class="mb-1"><strong>Médecins participants :</strong> {{ operation.medecins|length }}</p>
+            <p class="mb-1"><strong>Chirurgiens participants :</strong> {{ operation.chirurgiens|length }}</p>
             <p class="mb-0"><strong>Infirmières participantes :</strong> {{ operation.infirmieres|length }}</p>
         </div>
     </div>

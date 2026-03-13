@@ -1,0 +1,32 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Paramètres utilisateur{% endblock %}
+
+{% block body %}
+<div class="container mt-4" style="max-width: 700px;">
+    <h1 class="mb-4">Paramètres utilisateur</h1>
+
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="alert alert-{{ label == 'danger' ? 'danger' : 'success' }}">{{ message }}</div>
+        {% endfor %}
+    {% endfor %}
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title mb-3">Changer mon mot de passe</h5>
+
+            {{ form_start(form) }}
+                <div class="mb-3">{{ form_row(form.newPassword) }}</div>
+                <small class="text-muted d-block mb-3">Minimum 8 caractères, avec au moins 1 majuscule, 1 minuscule, 1 chiffre et 1 caractère spécial.</small>
+                <div class="mb-3">{{ form_row(form.confirmPassword) }}</div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">Mettre à jour</button>
+                    <a href="{{ path('app_greffe') }}" class="btn btn-outline-secondary">Retour</a>
+                </div>
+            {{ form_end(form) }}
+        </div>
+    </div>
+</div>
+{% endblock %}

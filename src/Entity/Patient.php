@@ -32,6 +32,15 @@ class Patient
     private ?bool $alive = null;
 
     /**
+     * @var Collection<int, User>
+     */
+    #[ORM\ManyToMany(targetEntity: User::class)]
+    #[ORM\JoinTable(name: 'patient_caregiver')]
+    #[ORM\JoinColumn(name: 'patient_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
+    #[ORM\InverseJoinColumn(name: 'user_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
+    private Collection $caregivers;
+
+    /**
      * @var Collection<int, Greffe>
      */
     #[ORM\OneToMany(targetEntity: Greffe::class, mappedBy: 'patient')]
@@ -47,6 +56,7 @@ class Patient
     {
         $this->greffes = new ArrayCollection();
         $this->operations = new ArrayCollection();
+        $this->caregivers = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -110,6 +120,30 @@ class Patient
     public function setIsAlive(?bool $alive): static
     {
         $this->alive = $alive;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, User>
+     */
+    public function getCaregivers(): Collection
+    {
+        return $this->caregivers;
+    }
+
+    public function addCaregiver(User $user): static
+    {
+        if (!$this->caregivers->contains($user)) {
+            $this->caregivers->add($user);
+        }
+
+        return $this;
+    }
+
+    public function removeCaregiver(User $user): static
+    {
+        $this->caregivers->removeElement($user);
 
         return $this;
     }

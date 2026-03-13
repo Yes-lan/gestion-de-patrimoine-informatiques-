@@ -3,11 +3,13 @@
 namespace App\Controller;
 
 use App\Entity\Infirmiere;
-use App\Entity\Medecin;
+use App\Entity\Chirurgien;
 use App\Entity\Operation;
 use App\Entity\Patient;
+use App\Entity\User;
 use App\Form\OperationType;
 use App\Repository\OperationRepository;
+use App\Repository\PatientRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -18,8 +20,20 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/operation')]
 class OperationController extends AbstractController
 {
+    private function denyUnlessPatientAccessible(Patient $patient, PatientRepository $patientRepository): void
+    {
+        if ($this->isGranted('ROLE_ADMIN')) {
+            return;
+        }
+
+        $user = $this->getUser();
+        if (!$user instanceof User || !$patientRepository->userCanAccessPatient($user, $patient->getId())) {
+            throw $this->createAccessDeniedException('Vous ne pouvez pas accéder à ce patient.');
+        }
+    }
+
     #[Route('', name: 'app_operation', methods: ['GET'])]
-    public function index(Request $request, EntityManagerInterface $em): Response
+    public function index(Request $request, EntityManagerInterface $em, PatientRepository $patientRepository): Response
     {
         $q = trim((string) $request->query->get('q', ''));
         $dateFrom = trim((string) $request->query->get('date_from', ''));
@@ -31,6 +45,32 @@ class OperationController extends AbstractController
             ->leftJoin('o.patient', 'p')
             ->addSelect('p')
             ->orderBy('o.dateOperation', 'DESC');
+
+        if (!$this->isGranted('ROLE_ADMIN')) {
+            $user = $this->getUser();
+            if (!$user instanceof User) {
+                throw $this->createAccessDeniedException('Utilisateur non authentifié.');
+            }
+
+            $allowedPatientIds = $patientRepository->findPatientIdsByCaregiver($user);
+            if ($allowedPatientIds === []) {
+                $operations = [];
+                $isJson = $request->isXmlHttpRequest() || str_contains($request->headers->get('Accept', ''), 'application/json');
+
+                if ($isJson || $q !== '' || $dateFrom !== '' || $dateTo !== '') {
+                    return $this->json([]);
+                }
+
+                return $this->render('operation/index.html.twig', [
+                    'operations' => $operations,
+                    'current_page' => $page,
+                    'total_pages' => 0,
+                ]);
+            }
+
+            $qb->andWhere('p.id IN (:allowedPatientIds)')
+                ->setParameter('allowedPatientIds', $allowedPatientIds);
+        }
 
         if ($q !== '') {
             $qb->andWhere('LOWER(o.titre) LIKE :q OR LOWER(p.Name) LIKE :q OR LOWER(p.FirstName) LIKE :q')
@@ -75,7 +115,7 @@ class OperationController extends AbstractController
                         'name' => $patient?->getName(),
                         'firstName' => $patient?->getFirstName(),
                     ],
-                    'medecins' => $operation->getMedecins()->count(),
+                    'chirurgiens' => $operation->getChirurgiens()->count(),
                     'infirmieres' => $operation->getInfirmieres()->count(),
                 ];
             }, $operations);
@@ -98,8 +138,8 @@ class OperationController extends AbstractController
             return $this->json([]);
         }
 
-        $medecins = $em->getRepository(Medecin::class)->createQueryBuilder('m')
-            ->where('LOWER(m.nom) LIKE :q OR LOWER(m.prenom) LIKE :q OR LOWER(m.email) LIKE :q')
+        $chirurgiens = $em->getRepository(Chirurgien::class)->createQueryBuilder('c')
+            ->where('LOWER(c.nom) LIKE :q OR LOWER(c.prenom) LIKE :q OR LOWER(c.email) LIKE :q')
             ->setParameter('q', '%' . mb_strtolower($q) . '%')
             ->setMaxResults(10)
             ->getQuery()
@@ -113,15 +153,15 @@ class OperationController extends AbstractController
             ->getResult();
 
         $results = [];
-        foreach ($medecins as $m) {
+        foreach ($chirurgiens as $c) {
             $results[] = [
-                'id' => 'medecin_' . $m->getId(),
-                'type' => 'medecin',
-                'typeId' => $m->getId(),
-                'nom' => $m->getNom(),
-                'prenom' => $m->getPrenom(),
-                'email' => $m->getEmail(),
-                'label' => sprintf('Dr %s %s (Médecin)', $m->getPrenom(), $m->getNom()),
+                'id' => 'chirurgien_' . $c->getId(),
+                'type' => 'chirurgien',
+                'typeId' => $c->getId(),
+                'nom' => $c->getNom(),
+                'prenom' => $c->getPrenom(),
+                'email' => $c->getEmail(),
+                'label' => sprintf('Dr %s %s (Chirurgien)', $c->getPrenom(), $c->getNom()),
             ];
         }
 
@@ -141,19 +181,34 @@ class OperationController extends AbstractController
     }
 
     #[Route('/patient/search', name: 'operation_patient_search', methods: ['GET'])]
-    public function searchPatient(Request $request, EntityManagerInterface $em): JsonResponse
+    public function searchPatient(Request $request, EntityManagerInterface $em, PatientRepository $patientRepository): JsonResponse
     {
         $q = trim((string) $request->query->get('q', ''));
         if (strlen($q) < 2) {
             return $this->json([]);
         }
 
-        $patients = $em->getRepository(Patient::class)->createQueryBuilder('p')
+        $qb = $em->getRepository(Patient::class)->createQueryBuilder('p')
             ->where('LOWER(p.Name) LIKE :q OR LOWER(p.FirstName) LIKE :q')
             ->setParameter('q', '%' . mb_strtolower($q) . '%')
-            ->setMaxResults(10)
-            ->getQuery()
-            ->getResult();
+            ->setMaxResults(10);
+
+        if (!$this->isGranted('ROLE_ADMIN')) {
+            $user = $this->getUser();
+            if (!$user instanceof User) {
+                return $this->json([]);
+            }
+
+            $allowedPatientIds = $patientRepository->findPatientIdsByCaregiver($user);
+            if ($allowedPatientIds === []) {
+                return $this->json([]);
+            }
+
+            $qb->andWhere('p.id IN (:allowedPatientIds)')
+                ->setParameter('allowedPatientIds', $allowedPatientIds);
+        }
+
+        $patients = $qb->getQuery()->getResult();
 
         $results = [];
         foreach ($patients as $patient) {
@@ -172,9 +227,10 @@ class OperationController extends AbstractController
     #[Route('/nouvelle', name: 'operation_creer', methods: ['GET', 'POST'])]
     public function creer(
         Request $request,
-        EntityManagerInterface $em
+        EntityManagerInterface $em,
+        PatientRepository $patientRepository
     ): Response {
-        if (!$this->isGranted('ROLE_MEDECIN') && !$this->isGranted('ROLE_INFIRMIERE') && !$this->isGranted('ROLE_ADMIN')) {
+        if (!$this->isGranted('ROLE_CHIRURGIEN') && !$this->isGranted('ROLE_INFIRMIERE') && !$this->isGranted('ROLE_ADMIN')) {
             throw $this->createAccessDeniedException('Accès réservé au personnel soignant.');
         }
 
@@ -200,15 +256,17 @@ class OperationController extends AbstractController
                 ]);
             }
 
+            $this->denyUnlessPatientAccessible($patient, $patientRepository);
+
             $operation->setPatient($patient);
 
-            $medecinIds = $request->request->all()['medecin_ids'] ?? [];
+            $chirurgienIds = $request->request->all()['chirurgien_ids'] ?? [];
             $infirmiereIds = $request->request->all()['infirmiere_ids'] ?? [];
 
-            foreach ($medecinIds as $medecinId) {
-                $medecin = $em->getRepository(Medecin::class)->find((int) $medecinId);
-                if ($medecin) {
-                    $operation->addMedecin($medecin);
+            foreach ($chirurgienIds as $chirurgienId) {
+                $chirurgien = $em->getRepository(Chirurgien::class)->find((int) $chirurgienId);
+                if ($chirurgien) {
+                    $operation->addChirurgien($chirurgien);
                 }
             }
 
@@ -220,7 +278,7 @@ class OperationController extends AbstractController
             }
 
             // Auto-set staff counts based on selection
-            $operation->setNbMedecins($operation->getMedecins()->count());
+            $operation->setNbMedecins($operation->getChirurgiens()->count());
             $operation->setNbInfirmieres($operation->getInfirmieres()->count());
 
             $em->persist($operation);
@@ -240,12 +298,15 @@ class OperationController extends AbstractController
     public function liste(
         int $patientId,
         EntityManagerInterface $em,
-        OperationRepository $operationRepository
+        OperationRepository $operationRepository,
+        PatientRepository $patientRepository
     ): Response {
         $patient = $em->getRepository(Patient::class)->find($patientId);
         if (!$patient) {
             throw $this->createNotFoundException('Patient non trouvé');
         }
+
+        $this->denyUnlessPatientAccessible($patient, $patientRepository);
 
         $operations = $operationRepository->findByPatient($patient);
 
@@ -256,8 +317,13 @@ class OperationController extends AbstractController
     }
 
     #[Route('/{id}', name: 'operation_afficher', methods: ['GET'])]
-    public function afficher(Operation $operation): Response
+    public function afficher(Operation $operation, PatientRepository $patientRepository): Response
     {
+        $patient = $operation->getPatient();
+        if ($patient instanceof Patient) {
+            $this->denyUnlessPatientAccessible($patient, $patientRepository);
+        }
+
         return $this->render('operation/afficher.html.twig', [
             'operation' => $operation,
         ]);

@@ -6,6 +6,7 @@ use App\Entity\Rapport;
 use App\Entity\Operation;
 use App\Entity\User;
 use App\Form\RapportType;
+use App\Repository\PatientRepository;
 use App\Repository\RapportRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -16,8 +17,24 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/rapport')]
 class RapportController extends AbstractController
 {
-    private function assertParticipant(Operation $operation): void
+    private function assertPatientAccess(Operation $operation, PatientRepository $patientRepository): void
     {
+        if ($this->isGranted('ROLE_ADMIN')) {
+            return;
+        }
+
+        $user = $this->getUser();
+        $patient = $operation->getPatient();
+
+        if (!$user instanceof User || !$patient || !$patientRepository->userCanAccessPatient($user, $patient->getId())) {
+            throw $this->createAccessDeniedException('Vous ne pouvez pas accéder aux rapports de ce patient.');
+        }
+    }
+
+    private function assertParticipant(Operation $operation, PatientRepository $patientRepository): void
+    {
+        $this->assertPatientAccess($operation, $patientRepository);
+
         if ($this->isGranted('ROLE_ADMIN')) {
             return;
         }
@@ -27,8 +44,8 @@ class RapportController extends AbstractController
             throw $this->createAccessDeniedException('Utilisateur non authentifié.');
         }
 
-        foreach ($operation->getMedecins() as $medecin) {
-            if ($medecin->getUser()?->getId() === $user->getId()) {
+        foreach ($operation->getChirurgiens() as $chirurgien) {
+            if ($chirurgien->getUser()?->getId() === $user->getId()) {
                 return;
             }
         }
@@ -47,9 +64,10 @@ class RapportController extends AbstractController
     public function creer(
         Operation $operation,
         Request $request,
-        EntityManagerInterface $em
+        EntityManagerInterface $em,
+        PatientRepository $patientRepository
     ): Response {
-        $this->assertParticipant($operation);
+        $this->assertParticipant($operation, $patientRepository);
 
         $rapport = new Rapport();
         $rapport->setOperation($operation);
@@ -77,9 +95,9 @@ class RapportController extends AbstractController
 
     // ========== AFFICHER UN RAPPORT ==========
     #[Route('/{id}', name: 'rapport_afficher', methods: ['GET'])]
-    public function afficher(Rapport $rapport): Response
+    public function afficher(Rapport $rapport, PatientRepository $patientRepository): Response
     {
-        $this->assertParticipant($rapport->getOperation());
+        $this->assertParticipant($rapport->getOperation(), $patientRepository);
 
         return $this->render('rapport/afficher.html.twig', [
             'rapport' => $rapport,
@@ -91,9 +109,10 @@ class RapportController extends AbstractController
     public function editer(
         Rapport $rapport,
         Request $request,
-        EntityManagerInterface $em
+        EntityManagerInterface $em,
+        PatientRepository $patientRepository
     ): Response {
-        $this->assertParticipant($rapport->getOperation());
+        $this->assertParticipant($rapport->getOperation(), $patientRepository);
 
         $form = $this->createForm(RapportType::class, $rapport);
         $form->handleRequest($request);
@@ -117,9 +136,10 @@ class RapportController extends AbstractController
     #[Route('/{id}/supprimer', name: 'rapport_supprimer', methods: ['POST'])]
     public function supprimer(
         Rapport $rapport,
-        EntityManagerInterface $em
+        EntityManagerInterface $em,
+        PatientRepository $patientRepository
     ): Response {
-        $this->assertParticipant($rapport->getOperation());
+        $this->assertParticipant($rapport->getOperation(), $patientRepository);
 
         $operationId = $rapport->getOperation()->getId();
         
@@ -135,7 +155,8 @@ class RapportController extends AbstractController
     public function lister(
         int $operationId,
         EntityManagerInterface $em,
-        RapportRepository $rapportRepo
+        RapportRepository $rapportRepo,
+        PatientRepository $patientRepository
     ): Response {
         $operation = $em->getRepository(Operation::class)->find($operationId);
         
@@ -143,7 +164,7 @@ class RapportController extends AbstractController
             throw $this->createNotFoundException('Opération non trouvée');
         }
 
-        $this->assertParticipant($operation);
+        $this->assertParticipant($operation, $patientRepository);
 
         $rapports = $rapportRepo->findByOperation($operation);
 
@@ -159,7 +180,8 @@ class RapportController extends AbstractController
         int $operationId,
         Request $request,
         EntityManagerInterface $em,
-        RapportRepository $rapportRepo
+        RapportRepository $rapportRepo,
+        PatientRepository $patientRepository
     ): Response {
         $operation = $em->getRepository(Operation::class)->find($operationId);
         
@@ -167,7 +189,7 @@ class RapportController extends AbstractController
             throw $this->createNotFoundException('Opération non trouvée');
         }
 
-        $this->assertParticipant($operation);
+        $this->assertParticipant($operation, $patientRepository);
 
         $query = $request->query->get('q', '');
         $rapports = [];

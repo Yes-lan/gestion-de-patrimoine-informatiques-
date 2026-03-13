@@ -41,7 +41,7 @@
                     type="search" 
                     id="personnelSearch" 
                     class="form-control" 
-                    placeholder="Rechercher un médecin ou une infirmière (tapez au moins 2 caractères et appuyez sur Entrée)"
+                    placeholder="Rechercher un chirurgien ou une infirmière (tapez au moins 2 caractères et appuyez sur Entrée)"
                     autocomplete="off"
                 >
                 <div id="personnelSuggestions" class="list-group mt-1" style="display:none; position:absolute; z-index:1000; max-height:200px; overflow-y:auto;"></div>
@@ -341,7 +341,7 @@ function renderTable() {
     selectedPersonnel.forEach(person => {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td><span class="badge bg-${person.type === 'medecin' ? 'primary' : 'info'}">${person.type === 'medecin' ? 'Médecin' : 'Infirmière'}</span></td>
+            <td><span class="badge bg-${person.type === 'chirurgien' ? 'primary' : 'info'}">${person.type === 'chirurgien' ? 'Chirurgien' : 'Infirmière'}</span></td>
             <td>${person.nom}</td>
             <td>${person.prenom}</td>
             <td>
@@ -357,14 +357,14 @@ function renderTable() {
 function updateHiddenInputs() {
     hiddenInputsContainer.innerHTML = '';
 
-    const medecins = selectedPersonnel.filter(p => p.type === 'medecin');
+    const chirurgiens = selectedPersonnel.filter(p => p.type === 'chirurgien');
     const infirmieres = selectedPersonnel.filter(p => p.type === 'infirmiere');
 
-    medecins.forEach(m => {
+    chirurgiens.forEach(c => {
         const input = document.createElement('input');
         input.type = 'hidden';
-        input.name = 'medecin_ids[]';
-        input.value = m.typeId;
+        input.name = 'chirurgien_ids[]';
+        input.value = c.typeId;
         hiddenInputsContainer.appendChild(input);
     });
 

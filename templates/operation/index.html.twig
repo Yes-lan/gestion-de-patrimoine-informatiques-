@@ -5,7 +5,7 @@
 {% block body %}
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h2>Recherche et Gestion des Opérations</h2>
-  {% if is_granted('ROLE_MEDECIN') or is_granted('ROLE_INFIRMIERE') or is_granted('ROLE_ADMIN') %}
+  {% if is_granted('ROLE_CHIRURGIEN') or is_granted('ROLE_INFIRMIERE') or is_granted('ROLE_ADMIN') %}
     <a href="{{ path('operation_creer') }}" class="btn btn-success">
       <i class="bi bi-plus-circle"></i> Créer une opération
     </a>
@@ -57,7 +57,7 @@
                 </p>
                 <p class="small mb-2">Date: {{ operation.dateOperation|date('Y-m-d H:i') }}</p>
                 <div class="mt-auto">
-                  <span class="badge bg-primary">Médecins: {{ operation.medecins|length }}</span>
+                  <span class="badge bg-primary">Chirurgiens: {{ operation.chirurgiens|length }}</span>
                   <span class="badge bg-info text-dark">Infirmières: {{ operation.infirmieres|length }}</span>
                 </div>
               </div>
@@ -110,7 +110,7 @@
           <p class="text-muted small mb-2">${o.patient?.name || ''} ${o.patient?.firstName || ''}</p>
           <p class="small mb-2">Date: ${o.date || ''}</p>
           <div class="mt-auto">
-            <span class="badge bg-primary">Médecins: ${o.medecins || 0}</span>
+            <span class="badge bg-primary">Chirurgiens: ${o.chirurgiens || 0}</span>
             <span class="badge bg-info text-dark">Infirmières: ${o.infirmieres || 0}</span>
           </div>
         </div>

@@ -19,7 +19,7 @@
                     <tr>
                         <th>Titre</th>
                         <th>Date</th>
-                        <th>Médecins</th>
+                        <th>Chirurgiens</th>
                         <th>Infirmières</th>
                         <th>Actions</th>
                     </tr>
@@ -29,7 +29,7 @@
                         <tr>
                             <td>{{ operation.titre }}</td>
                             <td>{{ operation.dateOperation|date('d/m/Y H:i') }}</td>
-                            <td>{{ operation.medecins|length }}</td>
+                            <td>{{ operation.chirurgiens|length }}</td>
                             <td>{{ operation.infirmieres|length }}</td>
                             <td>
                                 <a href="{{ path('operation_afficher', {id: operation.id}) }}" class="btn btn-sm btn-outline-info">Voir</a>
