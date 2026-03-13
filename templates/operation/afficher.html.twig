@@ -1,0 +1,33 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Opération - {{ operation.titre }}{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1 class="mb-3"><i class="bi bi-hospital"></i> {{ operation.titre }}</h1>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-body">
+            <p class="mb-1"><strong>Patient :</strong> {{ operation.patient.name }} {{ operation.patient.firstName }}</p>
+            <p class="mb-1"><strong>Date :</strong> {{ operation.dateOperation|date('d/m/Y H:i') }}</p>
+            <p class="mb-1"><strong>Description :</strong> {{ operation.description ?: '—' }}</p>
+            <p class="mb-1"><strong>Nombre de médecins durant l'opération :</strong> {{ operation.nbMedecins }}</p>
+            <p class="mb-1"><strong>Nombre d'infirmières durant l'opération :</strong> {{ operation.nbInfirmieres }}</p>
+            <p class="mb-1"><strong>Médecins participants :</strong> {{ operation.medecins|length }}</p>
+            <p class="mb-0"><strong>Infirmières participantes :</strong> {{ operation.infirmieres|length }}</p>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2">
+        <a href="{{ path('operation_liste', {patientId: operation.patient.id}) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Retour opérations
+        </a>
+        <a href="{{ path('rapport_liste', {operationId: operation.id}) }}" class="btn btn-outline-primary">
+            <i class="bi bi-file-earmark-text"></i> Voir les rapports
+        </a>
+        <a href="{{ path('rapport_creer', {id: operation.id}) }}" class="btn btn-success">
+            <i class="bi bi-pencil-square"></i> Écrire un rapport
+        </a>
+    </div>
+</div>
+{% endblock %}

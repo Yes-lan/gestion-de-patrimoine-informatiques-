@@ -1,0 +1,190 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ rapport.titre }}{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <h1 class="mb-2">
+                <i class="bi bi-file-text"></i> {{ rapport.titre }}
+            </h1>
+
+            <div class="text-muted mb-4">
+                <small>
+                    <i class="bi bi-calendar"></i> <strong>Créé:</strong> {{ rapport.dateCreation|date('d/m/Y à H:i') }}<br>
+                    <i class="bi bi-pencil"></i> <strong>Modifié:</strong> {{ rapport.dateModification|date('d/m/Y à H:i') }}<br>
+                    <i class="bi bi-person"></i> <strong>Auteur:</strong> {{ rapport.auteur.email|default('Inconnu') }}<br>
+                    <span class="badge bg-{{ rapport.statut == 'finalisé' ? 'success' : (rapport.statut == 'archivé' ? 'secondary' : 'warning') }}">
+                        {{ rapport.statut|capitalize }}
+                    </span>
+                </small>
+            </div>
+
+            <nav class="mb-3" aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="{{ path('operation_afficher', {id: rapport.operation.id}) }}">
+                            {{ rapport.operation.titre }}
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item active" aria-current="page">Rapport</li>
+                </ol>
+            </nav>
+
+            {# ========== AFFICHAGE DU CONTENU HTML RICHE ========== #}
+            <div class="rapport-content border rounded p-4 bg-light mb-4">
+                {{ rapport.contenuHtml|raw }}
+            </div>
+
+            {# Actions #}
+            <div class="btn-group mb-4" role="group">
+                <a href="{{ path('rapport_editer', {id: rapport.id}) }}" class="btn btn-warning">
+                    <i class="bi bi-pencil"></i> Modifier
+                </a>
+                
+                <form method="POST" action="{{ path('rapport_supprimer', {id: rapport.id}) }}" style="display:inline;">
+                    <button type="submit" class="btn btn-danger" onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce rapport ?')">
+                        <i class="bi bi-trash"></i> Supprimer
+                    </button>
+                </form>
+                
+                <a href="{{ path('rapport_liste', {operationId: rapport.operation.id}) }}" class="btn btn-secondary">
+                    <i class="bi bi-list"></i> Tous les rapports
+                </a>
+                
+                <a href="{{ path('operation_afficher', {id: rapport.operation.id}) }}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Retour
+                </a>
+            </div>
+        </div>
+
+        {# Barre latérale #}
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="bi bi-info-circle"></i> Informations
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p>
+                        <strong>Opération:</strong><br>
+                        <a href="{{ path('operation_afficher', {id: rapport.operation.id}) }}">
+                            {{ rapport.operation.titre }}
+                        </a>
+                    </p>
+                    
+                    <hr>
+                    
+                    <p>
+                        <strong>Statut:</strong><br>
+                        <span class="badge bg-{{ rapport.statut == 'finalisé' ? 'success' : (rapport.statut == 'archivé' ? 'secondary' : 'warning') }}">
+                            {{ rapport.statut|capitalize }}
+                        </span>
+                    </p>
+                    
+                    <hr>
+                    
+                    <p>
+                        <strong>Auteur:</strong><br>
+                        {{ rapport.auteur.email|default('Inconnu') }}
+                    </p>
+                    
+                    <hr>
+                    
+                    <p>
+                        <strong>Version:</strong><br>
+                        {{ rapport.version }}
+                    </p>
+                    
+                    <hr>
+                    
+                    <p>
+                        <strong>Dates:</strong><br>
+                        <small>
+                            Créé: {{ rapport.dateCreation|date('d/m/Y H:i') }}<br>
+                            Modifié: {{ rapport.dateModification|date('d/m/Y H:i') }}
+                        </small>
+                    </p>
+                </div>
+            </div>
+
+            {# Rapports récents du patient #}
+            <div class="card shadow-sm mt-3">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clock-history"></i> Autres rapports
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% set otherRapports = rapport.operation.rapports|filter(r => r.id != rapport.id) %}
+                    {% if otherRapports|length > 0 %}
+                        <ul class="list-unstyled">
+                            {% for r in otherRapports|slice(0, 5) %}
+                                <li class="mb-2">
+                                    <a href="{{ path('rapport_afficher', {id: r.id}) }}" class="text-decoration-none">
+                                        {{ r.titre|length > 40 ? r.titre|slice(0, 40) ~ '...' : r.titre }}
+                                    </a>
+                                    <br>
+                                    <small class="text-muted">{{ r.dateCreation|date('d/m/Y') }}</small>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                        {% if otherRapports|length > 5 %}
+                            <a href="{{ path('rapport_liste', {operationId: rapport.operation.id}) }}" class="btn btn-sm btn-outline-secondary w-100">
+                                Voir tous les rapports
+                            </a>
+                        {% endif %}
+                    {% else %}
+                        <p class="text-muted text-center mb-0">Pas d'autres rapports</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .rapport-content {
+        font-size: 15px;
+        line-height: 1.8;
+    }
+
+    .rapport-content h2 {
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin: 1.5rem 0 0.75rem;
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 0.5rem;
+    }
+
+    .rapport-content h3 {
+        font-size: 1.25rem;
+        font-weight: bold;
+        margin: 1rem 0 0.5rem;
+        color: #495057;
+    }
+
+    .rapport-content ul, .rapport-content ol {
+        margin-left: 2rem;
+        margin-bottom: 1rem;
+    }
+
+    .rapport-content li {
+        margin-bottom: 0.5rem;
+    }
+
+    .rapport-content p {
+        margin-bottom: 1rem;
+    }
+
+    .rapport-content blockquote {
+        border-left: 4px solid #007bff;
+        padding-left: 1rem;
+        margin-left: 0;
+        color: #666;
+        font-style: italic;
+    }
+</style>
+{% endblock %}

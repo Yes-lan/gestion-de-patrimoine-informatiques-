@@ -13,7 +13,7 @@ class Greffe
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(targetEntity: Patient::class)]
+    #[ORM\ManyToOne(targetEntity: Patient::class, inversedBy: 'greffes')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Patient $patient = null;
 

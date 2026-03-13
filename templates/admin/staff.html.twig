@@ -1,0 +1,194 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Administration - {{ title }}{% endblock %}
+
+{% block body %}
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>{{ title }}</h1>
+        <div class="d-flex gap-2">
+            <a href="{{ path('app_admin_pannel') }}" class="btn btn-outline-secondary">Retour au portail</a>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#staffModal" onclick="openCreateModal()">
+                Créer {{ staffLabel }}
+            </button>
+        </div>
+    </div>
+
+    <div id="alertContainer"></div>
+
+    <div class="card">
+        <div class="card-body">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nom</th>
+                        <th>Prénom</th>
+                        <th>Email</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user.id }}</td>
+                        <td>{{ user.nom }}</td>
+                        <td>{{ user.prenom }}</td>
+                        <td>{{ user.email }}</td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-warning" onclick="openEditModal({{ user.id }}, '{{ user.nom|e('js') }}', '{{ user.prenom|e('js') }}', '{{ user.email|e('js') }}')">Modifier</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteStaff({{ user.id }}, '{{ user.nom|e('js') }} {{ user.prenom|e('js') }}')">Supprimer</button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">Aucun {{ staffLabel }} trouvé</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="staffModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="staffModalLabel">Créer {{ staffLabel }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="staffForm">
+                    <input type="hidden" id="staffId" value="">
+
+                    <div class="mb-3">
+                        <label for="staffNom" class="form-label">Nom</label>
+                        <input type="text" class="form-control" id="staffNom" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="staffPrenom" class="form-label">Prénom</label>
+                        <input type="text" class="form-control" id="staffPrenom" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="staffEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="staffEmail" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="staffPassword" class="form-label">Mot de passe</label>
+                        <input type="password" class="form-control" id="staffPassword">
+                        <small class="form-text text-muted" id="passwordHint" style="display:none;">Laissez vide pour conserver le mot de passe actuel</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" onclick="saveStaff()">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let isEditMode = false;
+const staffType = '{{ staffType }}';
+
+function openCreateModal() {
+    isEditMode = false;
+    document.getElementById('staffModalLabel').textContent = 'Créer {{ staffLabel }}';
+    document.getElementById('staffForm').reset();
+    document.getElementById('staffId').value = '';
+    document.getElementById('staffPassword').required = true;
+    document.getElementById('passwordHint').style.display = 'none';
+}
+
+function openEditModal(id, nom, prenom, email) {
+    isEditMode = true;
+    document.getElementById('staffModalLabel').textContent = 'Modifier {{ staffLabel }}';
+    document.getElementById('staffId').value = id;
+    document.getElementById('staffNom').value = nom;
+    document.getElementById('staffPrenom').value = prenom;
+    document.getElementById('staffEmail').value = email;
+    document.getElementById('staffPassword').value = '';
+    document.getElementById('staffPassword').required = false;
+    document.getElementById('passwordHint').style.display = 'block';
+
+    const modal = new bootstrap.Modal(document.getElementById('staffModal'));
+    modal.show();
+}
+
+function saveStaff() {
+    const id = document.getElementById('staffId').value;
+    const nom = document.getElementById('staffNom').value;
+    const prenom = document.getElementById('staffPrenom').value;
+    const email = document.getElementById('staffEmail').value;
+    const password = document.getElementById('staffPassword').value;
+
+    if (!nom || !prenom || !email) {
+        showAlert('Nom, prénom et email requis', 'danger');
+        return;
+    }
+
+    if (!isEditMode && !password) {
+        showAlert('Mot de passe requis', 'danger');
+        return;
+    }
+
+    const url = isEditMode ? `/admin/staff/${staffType}/${id}/update` : `/admin/staff/${staffType}/create`;
+    const payload = { nom, prenom, email };
+    if (password) {
+        payload.password = password;
+    }
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('staffModal')).hide();
+            showAlert(data.message, 'success');
+            setTimeout(() => location.reload(), 900);
+        } else {
+            showAlert(data.message, 'danger');
+        }
+    })
+    .catch(() => showAlert('Erreur lors de la sauvegarde', 'danger'));
+}
+
+function deleteStaff(id, email) {
+    if (!confirm(`Supprimer le compte "${email}" ?`)) {
+        return;
+    }
+
+    fetch(`/admin/staff/${staffType}/${id}/delete`, { method: 'DELETE' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert(data.message, 'success');
+                setTimeout(() => location.reload(), 900);
+            } else {
+                showAlert(data.message, 'danger');
+            }
+        })
+        .catch(() => showAlert('Erreur lors de la suppression', 'danger'));
+}
+
+function showAlert(message, type) {
+    const alertContainer = document.getElementById('alertContainer');
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} alert-dismissible fade show`;
+    alert.role = 'alert';
+    alert.innerHTML = `${message}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>`;
+    alertContainer.appendChild(alert);
+    setTimeout(() => alert.remove(), 4000);
+}
+</script>
+{% endblock %}

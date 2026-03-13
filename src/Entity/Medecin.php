@@ -2,12 +2,12 @@
 
 namespace App\Entity;
 
-use App\Repository\ChirurgienRepository;
+use App\Repository\MedecinRepository;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity(repositoryClass: ChirurgienRepository::class)]
-#[ORM\Table(name: 'Chirurgien')]
-class Chirurgien
+#[ORM\Entity(repositoryClass: MedecinRepository::class)]
+#[ORM\Table(name: 'medecin')]
+class Medecin
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -26,10 +26,6 @@ class Chirurgien
 
     #[ORM\Column(length: 180, unique: true)]
     private ?string $email = null;
-
-    // Ancienne propriété Name maintenant dépréciée - sera supprimée après migration
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $Name = null;
 
     public function getId(): ?int
     {
@@ -80,19 +76,6 @@ class Chirurgien
     public function setEmail(string $email): static
     {
         $this->email = $email;
-
-        return $this;
-    }
-
-    // Ancienne méthode - gardée pour compatibilité temporaire
-    public function getName(): ?string
-    {
-        return $this->Name ?? ($this->prenom . ' ' . $this->nom);
-    }
-
-    public function setName(string $Name): static
-    {
-        $this->Name = $Name;
 
         return $this;
     }

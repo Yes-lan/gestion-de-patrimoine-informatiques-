@@ -1,0 +1,48 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Administration{% endblock %}
+
+{% block body %}
+<div class="container mt-5">
+    <h1 class="mb-4">Portail Administration</h1>
+    <p class="text-muted mb-4">Choisissez le CRUD à gérer.</p>
+
+    <div class="row g-3">
+        <div class="col-md-4">
+            <a href="{{ path('admin_patients') }}" class="card text-decoration-none h-100 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">CRUD Patients</h5>
+                    <p class="card-text text-muted">Créer, modifier et supprimer les patients.</p>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-4">
+            <a href="{{ path('admin_chirurgiens') }}" class="card text-decoration-none h-100 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">CRUD Chirurgiens</h5>
+                    <p class="card-text text-muted">Gérer les comptes chirurgiens.</p>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-4">
+            <a href="{{ path('admin_medecins') }}" class="card text-decoration-none h-100 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">CRUD Médecins</h5>
+                    <p class="card-text text-muted">Gérer les comptes médecins.</p>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-4">
+            <a href="{{ path('admin_infirmieres') }}" class="card text-decoration-none h-100 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">CRUD Infirmières</h5>
+                    <p class="card-text text-muted">Gérer les comptes infirmières.</p>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

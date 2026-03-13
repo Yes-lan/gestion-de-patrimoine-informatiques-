@@ -2,6 +2,8 @@
 
 namespace App\Controller;
 
+use App\Entity\Infirmiere;
+use App\Entity\Chirurgien;
 use App\Entity\Patient;
 use App\Entity\Greffe;
 use Doctrine\ORM\EntityManagerInterface;
@@ -96,6 +98,8 @@ final class PatientController extends AbstractController
             $section->addText('Prénom : ${firstName}');
             $section->addText('Ville : ${ville}');
             $section->addText('Numéro dossier : ${numDossier}');
+            $section->addText('Chirurgien : ${chirurgien}');
+            $section->addText('Infirmière : ${infirmiere}');
             $phpWord->save($templatePath, 'Word2007');
         }
 

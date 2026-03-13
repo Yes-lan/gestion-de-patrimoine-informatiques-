@@ -1,0 +1,194 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Rapports - {{ operation.titre }}{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="mb-4">
+                <h1 class="mb-2">
+                    <i class="bi bi-file-earmark-text"></i> Rapports de l'opération: {{ operation.titre }}
+                </h1>
+                <p class="text-muted">
+                    Patient: {{ operation.patient.name }} {{ operation.patient.firstName }}
+                </p>
+            </div>
+
+            {# Actions rapides #}
+            <div class="mb-4">
+                <a href="{{ path('rapport_creer', {id: operation.id}) }}" class="btn btn-primary me-2">
+                    <i class="bi bi-file-earmark-plus"></i> Créer un nouveau rapport
+                </a>
+                <a href="{{ path('operation_afficher', {id: operation.id}) }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Retour à l'opération
+                </a>
+            </div>
+
+            {# Barre de recherche #}
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body">
+                    <form action="{{ path('rapport_recherche', {operationId: operation.id}) }}" method="GET" class="row g-3">
+                        <div class="col-md-9">
+                            <input type="text" name="q" class="form-control" placeholder="Rechercher dans les rapports..." value="{{ app.request.query.get('q', '') }}">
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-outline-primary w-100">
+                                <i class="bi bi-search"></i> Rechercher
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            {# Liste des rapports #}
+            {% if rapports is not empty %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th><i class="bi bi-file-earmark-text"></i> Titre</th>
+                                <th>Auteur</th>
+                                <th>Date</th>
+                                <th>Statut</th>
+                                <th style="width: 150px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for rapport in rapports|sort((a, b) => b.dateCreation <=> a.dateCreation) %}
+                                <tr>
+                                    <td>
+                                        <strong>
+                                            <a href="{{ path('rapport_afficher', {id: rapport.id}) }}" class="text-decoration-none">
+                                                {{ rapport.titre }}
+                                            </a>
+                                        </strong>
+                                    </td>
+                                    <td>
+                                        {% if rapport.auteur %}
+                                            {{ rapport.auteur.email }}
+                                        {% else %}
+                                            <span class="text-muted">Non renseigné</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {{ rapport.dateCreation|date('d/m/Y H:i') }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        {% if rapport.statut == 'brouillon' %}
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="bi bi-pencil"></i> Brouillon
+                                            </span>
+                                        {% elseif rapport.statut == 'finalisé' %}
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-check-circle"></i> Finalisé
+                                            </span>
+                                        {% elseif rapport.statut == 'archivé' %}
+                                            <span class="badge bg-secondary">
+                                                <i class="bi bi-archive"></i> Archivé
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{{ path('rapport_afficher', {id: rapport.id}) }}" class="btn btn-outline-info" title="Voir">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="{{ path('rapport_editer', {id: rapport.id}) }}" class="btn btn-outline-warning" title="Modifier">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <form action="{{ path('rapport_supprimer', {id: rapport.id}) }}" method="POST" style="display: inline;" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce rapport ?');">
+                                                <button type="submit" class="btn btn-outline-danger btn-sm" title="Supprimer">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {# Statistiques #}
+                <div class="row mt-4">
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title text-muted">Total rapports</h5>
+                                <h2 class="mb-0">{{ rapports|length }}</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title text-muted">Finalisés</h5>
+                                <h2 class="mb-0 text-success">
+                                    {{ rapports|filter(r => r.statut == 'finalisé')|length }}
+                                </h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title text-muted">Brouillons</h5>
+                                <h2 class="mb-0 text-warning">
+                                    {{ rapports|filter(r => r.statut == 'brouillon')|length }}
+                                </h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title text-muted">Archivés</h5>
+                                <h2 class="mb-0 text-secondary">
+                                    {{ rapports|filter(r => r.statut == 'archivé')|length }}
+                                </h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="alert alert-info" role="alert">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Aucun rapport</strong> - Il n'y a pas encore de rapport pour cette opération.
+                    <br>
+                    <a href="{{ path('rapport_creer', {id: operation.id}) }}" class="alert-link">
+                        Créer le premier rapport →
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .table tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+
+    .btn-group-sm {
+        display: flex;
+        gap: 2px;
+    }
+
+    .card {
+        border: 1px solid #dee2e6;
+        transition: box-shadow 0.3s ease;
+    }
+
+    .card:hover {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+
+    .card-title {
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}

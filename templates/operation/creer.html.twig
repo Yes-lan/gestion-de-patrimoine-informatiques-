@@ -1,0 +1,394 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nouvelle opération{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1 class="mb-4">
+        <i class="bi bi-hospital"></i> Nouvelle opération
+    </h1>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            {{ form_start(form) }}
+            <div class="mb-3">
+                <label class="form-label">Patient <span class="text-danger">*</span></label>
+                <input 
+                    type="search" 
+                    id="patientSearch" 
+                    class="form-control" 
+                    placeholder="Rechercher un patient (tapez au moins 2 caractères)..."
+                    autocomplete="off"
+                    required
+                >
+                <div id="patientSuggestions" class="list-group mt-1" style="display:none; position:absolute; z-index:1000; max-height:200px; overflow-y:auto; width: calc(100% - 2rem);"></div>
+                <small id="patientSearchFeedback" class="text-muted"></small>
+                <input type="hidden" id="selectedPatientId" name="operation[patient]" required>
+                <div id="selectedPatientDisplay" class="mt-2" style="display:none;">
+                    <div class="alert alert-info d-flex justify-content-between align-items-center">
+                        <span id="selectedPatientText"></span>
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearPatientSelection()">Changer</button>
+                    </div>
+                </div>
+            </div>
+            <div class="mb-3">{{ form_row(form.titre) }}</div>
+            <div class="mb-3">{{ form_row(form.dateOperation) }}</div>
+            <div class="mb-3">{{ form_row(form.description) }}</div>
+
+            <div class="mb-3">
+                <label class="form-label">Personnel médical</label>
+                <input 
+                    type="search" 
+                    id="personnelSearch" 
+                    class="form-control" 
+                    placeholder="Rechercher un médecin ou une infirmière (tapez au moins 2 caractères et appuyez sur Entrée)"
+                    autocomplete="off"
+                >
+                <div id="personnelSuggestions" class="list-group mt-1" style="display:none; position:absolute; z-index:1000; max-height:200px; overflow-y:auto;"></div>
+                <small id="personnelSearchFeedback" class="text-muted"></small>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Personnel sélectionné</label>
+                <table class="table table-sm" id="personnelTable">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Nom</th>
+                            <th>Prénom</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="personnelTableBody">
+                        <tr id="emptyRow">
+                            <td colspan="4" class="text-muted text-center">Aucun personnel sélectionné</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="hiddenInputsContainer"></div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-save"></i> Créer l'opération
+                </button>
+                <a href="{{ path('app_operation') }}" class="btn btn-secondary">Annuler</a>
+            </div>
+            {{ form_end(form) }}
+        </div>
+    </div>
+</div>
+
+<script>
+// Patient search and selection
+const patientSearch = document.getElementById('patientSearch');
+const patientSuggestions = document.getElementById('patientSuggestions');
+const selectedPatientId = document.getElementById('selectedPatientId');
+const selectedPatientDisplay = document.getElementById('selectedPatientDisplay');
+const selectedPatientText = document.getElementById('selectedPatientText');
+const patientSearchFeedback = document.getElementById('patientSearchFeedback');
+
+let patientSuggestionResults = [];
+let selectedPatientSuggestionIndex = -1;
+let patientSearchTimer;
+let patientRequestToken = 0;
+
+function setFeedback(el, message, level = 'muted') {
+    el.textContent = message;
+    el.className = level === 'danger' ? 'text-danger' : 'text-muted';
+}
+
+patientSearch.addEventListener('input', async () => {
+    const query = patientSearch.value.trim();
+    if (query.length < 2) {
+        patientSuggestions.style.display = 'none';
+        patientSuggestionResults = [];
+        setFeedback(patientSearchFeedback, 'Tapez au moins 2 caractères.');
+        return;
+    }
+
+    clearTimeout(patientSearchTimer);
+    patientSearchTimer = setTimeout(async () => {
+        const currentToken = ++patientRequestToken;
+        setFeedback(patientSearchFeedback, 'Recherche patient en cours...');
+
+        try {
+            const response = await fetch(`{{ path('operation_patient_search') }}?q=${encodeURIComponent(query)}`);
+            if (currentToken !== patientRequestToken) {
+                return;
+            }
+
+            const results = await response.json();
+            patientSuggestionResults = results;
+            selectedPatientSuggestionIndex = -1;
+            renderPatientSuggestions(results);
+
+            if (results.length === 0) {
+                setFeedback(patientSearchFeedback, 'Aucun patient trouvé.');
+            } else {
+                setFeedback(patientSearchFeedback, '');
+            }
+        } catch (error) {
+            console.error('Erreur recherche patient:', error);
+            setFeedback(patientSearchFeedback, 'Erreur pendant la recherche patient.', 'danger');
+        }
+    }, 300);
+});
+
+patientSearch.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        selectedPatientSuggestionIndex = Math.min(selectedPatientSuggestionIndex + 1, patientSuggestionResults.length - 1);
+        highlightPatientSuggestion();
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        selectedPatientSuggestionIndex = Math.max(selectedPatientSuggestionIndex - 1, -1);
+        highlightPatientSuggestion();
+    } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (selectedPatientSuggestionIndex >= 0 && patientSuggestionResults[selectedPatientSuggestionIndex]) {
+            selectPatient(patientSuggestionResults[selectedPatientSuggestionIndex]);
+        }
+    }
+});
+
+function renderPatientSuggestions(results) {
+    if (results.length === 0) {
+        patientSuggestions.style.display = 'none';
+        return;
+    }
+
+    patientSuggestions.innerHTML = results.map((r, idx) => `
+        <button type="button" class="list-group-item list-group-item-action ${idx === selectedPatientSuggestionIndex ? 'active' : ''}" data-index="${idx}">
+            ${r.label}
+        </button>
+    `).join('');
+    
+    patientSuggestions.style.display = 'block';
+
+    patientSuggestions.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const index = parseInt(btn.dataset.index);
+            selectPatient(results[index]);
+        });
+    });
+}
+
+function highlightPatientSuggestion() {
+    const buttons = patientSuggestions.querySelectorAll('button');
+    buttons.forEach((btn, idx) => {
+        btn.classList.toggle('active', idx === selectedPatientSuggestionIndex);
+    });
+}
+
+function selectPatient(patient) {
+    selectedPatientId.value = patient.id;
+    selectedPatientText.textContent = patient.label;
+    patientSearch.style.display = 'none';
+    patientSuggestions.style.display = 'none';
+    selectedPatientDisplay.style.display = 'block';
+    patientSuggestionResults = [];
+    selectedPatientSuggestionIndex = -1;
+    setFeedback(patientSearchFeedback, '');
+}
+
+function clearPatientSelection() {
+    selectedPatientId.value = '';
+    patientSearch.value = '';
+    patientSearch.style.display = 'block';
+    selectedPatientDisplay.style.display = 'none';
+    setFeedback(patientSearchFeedback, 'Tapez au moins 2 caractères.');
+}
+
+// Personnel search and selection
+const personnelSearch = document.getElementById('personnelSearch');
+const suggestionsList = document.getElementById('personnelSuggestions');
+const tableBody = document.getElementById('personnelTableBody');
+const emptyRow = document.getElementById('emptyRow');
+const hiddenInputsContainer = document.getElementById('hiddenInputsContainer');
+const personnelSearchFeedback = document.getElementById('personnelSearchFeedback');
+
+let selectedPersonnel = [];
+let suggestionResults = [];
+let filteredSuggestionResults = [];
+let selectedSuggestionIndex = -1;
+let personnelSearchTimer;
+let personnelRequestToken = 0;
+
+personnelSearch.addEventListener('input', async () => {
+    const query = personnelSearch.value.trim();
+    if (query.length < 2) {
+        suggestionsList.style.display = 'none';
+        suggestionResults = [];
+        filteredSuggestionResults = [];
+        setFeedback(personnelSearchFeedback, 'Tapez au moins 2 caractères.');
+        return;
+    }
+
+    clearTimeout(personnelSearchTimer);
+    personnelSearchTimer = setTimeout(async () => {
+        const currentToken = ++personnelRequestToken;
+        setFeedback(personnelSearchFeedback, 'Recherche personnel en cours...');
+
+        try {
+            const response = await fetch(`{{ path('operation_personnel_search') }}?q=${encodeURIComponent(query)}`);
+            if (currentToken !== personnelRequestToken) {
+                return;
+            }
+
+            const results = await response.json();
+            suggestionResults = results;
+            filteredSuggestionResults = results.filter(r => !selectedPersonnel.some(p => p.id === r.id));
+            selectedSuggestionIndex = -1;
+            renderSuggestions();
+
+            if (filteredSuggestionResults.length === 0) {
+                setFeedback(personnelSearchFeedback, 'Aucun résultat disponible.');
+            } else {
+                setFeedback(personnelSearchFeedback, '');
+            }
+        } catch (error) {
+            console.error('Erreur recherche:', error);
+            setFeedback(personnelSearchFeedback, 'Erreur pendant la recherche personnel.', 'danger');
+        }
+    }, 300);
+});
+
+personnelSearch.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        selectedSuggestionIndex = Math.min(selectedSuggestionIndex + 1, filteredSuggestionResults.length - 1);
+        highlightSuggestion();
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        selectedSuggestionIndex = Math.max(selectedSuggestionIndex - 1, -1);
+        highlightSuggestion();
+    } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (selectedSuggestionIndex >= 0 && filteredSuggestionResults[selectedSuggestionIndex]) {
+            addPersonnel(filteredSuggestionResults[selectedSuggestionIndex]);
+        }
+    }
+});
+
+function renderSuggestions() {
+    if (filteredSuggestionResults.length === 0) {
+        suggestionsList.style.display = 'none';
+        return;
+    }
+
+    suggestionsList.innerHTML = filteredSuggestionResults.map((r, idx) => `
+        <button type="button" class="list-group-item list-group-item-action ${idx === selectedSuggestionIndex ? 'active' : ''}" data-idx="${idx}">
+            ${r.label}
+        </button>
+    `).join('');
+    
+    suggestionsList.style.display = 'block';
+
+    suggestionsList.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const idx = parseInt(btn.dataset.idx);
+            addPersonnel(filteredSuggestionResults[idx]);
+        });
+    });
+}
+
+function highlightSuggestion() {
+    const buttons = suggestionsList.querySelectorAll('button');
+    buttons.forEach((btn, idx) => {
+        btn.classList.toggle('active', idx === selectedSuggestionIndex);
+    });
+    
+    // Scroll to the selected item
+    if (selectedSuggestionIndex >= 0 && buttons[selectedSuggestionIndex]) {
+        buttons[selectedSuggestionIndex].scrollIntoView({ block: 'nearest' });
+    }
+}
+
+function addPersonnel(person) {
+    if (selectedPersonnel.some(p => p.id === person.id)) {
+        return;
+    }
+
+    selectedPersonnel.push(person);
+    personnelSearch.value = '';
+    suggestionResults = [];
+    filteredSuggestionResults = [];
+    suggestionsList.style.display = 'none';
+    selectedSuggestionIndex = -1;
+    setFeedback(personnelSearchFeedback, '');
+    renderTable();
+    updateHiddenInputs();
+}
+
+function removePersonnel(personId) {
+    selectedPersonnel = selectedPersonnel.filter(p => p.id !== personId);
+    renderTable();
+    updateHiddenInputs();
+}
+
+function renderTable() {
+    if (selectedPersonnel.length === 0) {
+        emptyRow.style.display = '';
+        tableBody.querySelectorAll('tr:not(#emptyRow)').forEach(row => row.remove());
+        return;
+    }
+
+    emptyRow.style.display = 'none';
+    tableBody.querySelectorAll('tr:not(#emptyRow)').forEach(row => row.remove());
+
+    selectedPersonnel.forEach(person => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><span class="badge bg-${person.type === 'medecin' ? 'primary' : 'info'}">${person.type === 'medecin' ? 'Médecin' : 'Infirmière'}</span></td>
+            <td>${person.nom}</td>
+            <td>${person.prenom}</td>
+            <td>
+                <button type="button" class="btn btn-sm btn-danger" onclick="removePersonnel('${person.id}')">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        `;
+        tableBody.appendChild(row);
+    });
+}
+
+function updateHiddenInputs() {
+    hiddenInputsContainer.innerHTML = '';
+
+    const medecins = selectedPersonnel.filter(p => p.type === 'medecin');
+    const infirmieres = selectedPersonnel.filter(p => p.type === 'infirmiere');
+
+    medecins.forEach(m => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'medecin_ids[]';
+        input.value = m.typeId;
+        hiddenInputsContainer.appendChild(input);
+    });
+
+    infirmieres.forEach(i => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'infirmiere_ids[]';
+        input.value = i.typeId;
+        hiddenInputsContainer.appendChild(input);
+    });
+}
+
+// Click outside to close suggestions
+document.addEventListener('click', (e) => {
+    if (!personnelSearch.contains(e.target) && !suggestionsList.contains(e.target)) {
+        suggestionsList.style.display = 'none';
+    }
+    if (!patientSearch.contains(e.target) && !patientSuggestions.contains(e.target)) {
+        patientSuggestions.style.display = 'none';
+    }
+});
+
+// Make clearPatientSelection available globally
+window.clearPatientSelection = clearPatientSelection;
+window.removePersonnel = removePersonnel;
+</script>
+{% endblock %}

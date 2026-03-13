@@ -33,7 +33,41 @@
     </div>
   {% endif %}
 
-  <a class="btn btn-secondary mt-3" href="{{ path('app_greffe') }}">Retour à la liste</a>
-  <a class="btn btn-primary mt-3 ms-2" href="{{ path('patient_export', {'id': patient.id}) }}">Télécharger la fiche (DOCX)</a>
+  {% set now = date() %}
+  {% set operationsPrevues = patient.operations|filter(o => o.dateOperation and o.dateOperation >= now) %}
+  {% set operationsEffectuees = patient.operations|filter(o => o.dateOperation and o.dateOperation < now) %}
+
+  <h2 class="mt-4">Opérations prévues</h2>
+  {% if operationsPrevues is empty %}
+    <p>Aucune opération prévue.</p>
+  {% else %}
+    <div class="list-group mb-3">
+      {% for operation in operationsPrevues %}
+        <a href="{{ path('operation_afficher', {id: operation.id}) }}" class="list-group-item list-group-item-action">
+          <strong>{{ operation.titre }}</strong><br>
+          <small class="text-muted">Date prévue : {{ operation.dateOperation|date('d/m/Y H:i') }}</small>
+        </a>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <h2>Opérations déjà effectuées</h2>
+  {% if operationsEffectuees is empty %}
+    <p>Aucune opération déjà effectuée.</p>
+  {% else %}
+    <div class="list-group">
+      {% for operation in operationsEffectuees %}
+        <a href="{{ path('operation_afficher', {id: operation.id}) }}" class="list-group-item list-group-item-action">
+          <strong>{{ operation.titre }}</strong><br>
+          <small class="text-muted">Date : {{ operation.dateOperation|date('d/m/Y H:i') }}</small>
+        </a>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="d-flex flex-wrap gap-2 mt-3">
+    <a class="btn btn-secondary" href="{{ path('app_greffe') }}">Retour à la liste</a>
+    <a class="btn btn-primary" href="{{ path('patient_export', {'id': patient.id}) }}">Télécharger la fiche (DOCX)</a>
+</div>
 </div>
 {% endblock %}

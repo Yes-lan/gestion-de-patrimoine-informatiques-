@@ -15,6 +15,10 @@ class Patient
     #[ORM\Column]
     private ?int $id = null;
 
+    #[ORM\OneToOne(cascade: ['persist', 'remove'])]
+    #[ORM\JoinColumn(nullable: true)]
+    private ?User $user = null;
+
     #[ORM\Column(length: 255)]
     private ?string $Name = null;
 
@@ -33,14 +37,33 @@ class Patient
     #[ORM\OneToMany(targetEntity: Greffe::class, mappedBy: 'patient')]
     private Collection $greffes;
 
+    /**
+     * @var Collection<int, Operation>
+     */
+    #[ORM\OneToMany(targetEntity: Operation::class, mappedBy: 'patient', cascade: ['remove'])]
+    private Collection $operations;
+
     public function __construct()
     {
         $this->greffes = new ArrayCollection();
+        $this->operations = new ArrayCollection();
     }
 
     public function getId(): ?int
     {
         return $this->id;
+    }
+
+    public function getUser(): ?User
+    {
+        return $this->user;
+    }
+
+    public function setUser(?User $user): static
+    {
+        $this->user = $user;
+
+        return $this;
     }
 
     public function getName(): ?string
@@ -114,6 +137,35 @@ class Patient
         if ($this->greffes->removeElement($greffe)) {
             if ($greffe->getPatient() === $this) {
                 $greffe->setPatient(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Operation>
+     */
+    public function getOperations(): Collection
+    {
+        return $this->operations;
+    }
+
+    public function addOperation(Operation $operation): static
+    {
+        if (!$this->operations->contains($operation)) {
+            $this->operations->add($operation);
+            $operation->setPatient($this);
+        }
+
+        return $this;
+    }
+
+    public function removeOperation(Operation $operation): static
+    {
+        if ($this->operations->removeElement($operation)) {
+            if ($operation->getPatient() === $this) {
+                $operation->setPatient(null);
             }
         }
 

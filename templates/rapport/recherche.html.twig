@@ -1,0 +1,157 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Recherche - Rapports - {{ operation.titre }}{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="mb-4">
+                <h1 class="mb-2">
+                    <i class="bi bi-search"></i> Recherche dans les rapports
+                </h1>
+                <p class="text-muted">
+                    Opération: {{ operation.titre }} — Patient: {{ operation.patient.name }} {{ operation.patient.firstName }}
+                </p>
+            </div>
+
+            {# Formulaire de recherche #}
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body">
+                    <form action="{{ path('rapport_recherche', {operationId: operation.id}) }}" method="GET" class="row g-3">
+                        <div class="col-md-9">
+                            <input type="text" name="q" class="form-control form-control-lg" 
+                                   placeholder="Rechercher dans les rapports..." 
+                                   value="{{ app.request.query.get('q', '') }}" autofocus>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-primary w-100 btn-lg">
+                                <i class="bi bi-search"></i> Rechercher
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            {# Résultats #}
+            {% if query %}
+                <div class="alert alert-light border-bottom mb-4">
+                    <strong>{{ rapports|length }}</strong> résultat(s) trouvé(s) pour "<strong>{{ query }}</strong>"
+                </div>
+            {% endif %}
+
+            {% if rapports is not empty %}
+                <div class="row">
+                    {% for rapport in rapports %}
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100 shadow-sm">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h5 class="card-title mb-0">
+                                            <a href="{{ path('rapport_afficher', {id: rapport.id}) }}" class="text-decoration-none">
+                                                {{ rapport.titre }}
+                                            </a>
+                                        </h5>
+                                        {% if rapport.statut == 'brouillon' %}
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="bi bi-pencil"></i> Brouillon
+                                            </span>
+                                        {% elseif rapport.statut == 'finalisé' %}
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-check-circle"></i> Finalisé
+                                            </span>
+                                        {% elseif rapport.statut == 'archivé' %}
+                                            <span class="badge bg-secondary">
+                                                <i class="bi bi-archive"></i> Archivé
+                                            </span>
+                                        {% endif %}
+                                    </div>
+
+                                    <p class="text-muted small mb-2">
+                                        <i class="bi bi-person"></i>
+                                        {% if rapport.auteur %}
+                                            {{ rapport.auteur.email }}
+                                        {% else %}
+                                            Non renseigné
+                                        {% endif %}
+                                        <br>
+                                        <i class="bi bi-calendar"></i> {{ rapport.dateCreation|date('d/m/Y à H:i') }}
+                                    </p>
+
+                                    {# Aperçu du contenu avec tags HTML enlevés #}
+                                    <p class="card-text text-justify small" style="max-height: 120px; overflow: hidden;">
+                                        {{ rapport.contenuTexte|striptags|slice(0, 200) }}{% if rapport.contenuTexte|striptags|length > 200 %}...{% endif %}
+                                    </p>
+
+                                    <hr>
+
+                                    {# Actions #}
+                                    <div class="d-flex gap-2">
+                                        <a href="{{ path('rapport_afficher', {id: rapport.id}) }}" class="btn btn-outline-info btn-sm flex-grow-1">
+                                            <i class="bi bi-eye"></i> Voir
+                                        </a>
+                                        <a href="{{ path('rapport_editer', {id: rapport.id}) }}" class="btn btn-outline-warning btn-sm flex-grow-1">
+                                            <i class="bi bi-pencil"></i> Modifier
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% elseif query %}
+                <div class="alert alert-warning" role="alert">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>Aucun résultat</strong> - Aucun rapport ne correspond à votre recherche "<strong>{{ query }}</strong>".
+                    <br>
+                    <small class="text-muted">
+                        Essayez avec d'autres mots-clés ou <a href="{{ path('rapport_liste', {operationId: operation.id}) }}" class="alert-link">consultez tous les rapports</a>.
+                    </small>
+                </div>
+            {% else %}
+                <div class="alert alert-info" role="alert">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Commencez votre recherche</strong> - Entrez des mots-clés pour trouver les rapports.
+                </div>
+            {% endif %}
+
+            {# Retour à la liste #}
+            <div class="mt-4">
+                <a href="{{ path('rapport_liste', {operationId: operation.id}) }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Retour à la liste
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: 1px solid #dee2e6;
+    }
+
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1);
+    }
+
+    .card-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .card-title a {
+        color: #0d6efd;
+    }
+
+    .card-title a:hover {
+        color: #0a58ca;
+    }
+
+    .text-justify {
+        text-align: justify;
+    }
+</style>
+{% endblock %}

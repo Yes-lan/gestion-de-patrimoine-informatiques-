@@ -34,8 +34,8 @@ class Serologie
     #[ORM\Column]
     private ?bool $Selorogie_HCV = null;
 
-    #[ORM\Column]
-    private ?bool $Selorogie_AgÂ_HBS = null;
+    #[ORM\Column(name: 'Selorogie_AgS_HBS')]
+    private ?bool $Selorogie_AgS_HBS = null;
 
     #[ORM\Column]
     private ?bool $Selorogie_Ac_HBS = null;
@@ -132,14 +132,14 @@ class Serologie
         return $this;
     }
 
-    public function isSelorogieAgÂHBS(): ?bool
+    public function isSelorogieAgSHBS(): ?bool
     {
-        return $this->Selorogie_AgÂ_HBS;
+        return $this->Selorogie_AgS_HBS;
     }
 
-    public function setSelorogieAgÂHBS(bool $Selorogie_AgÂ_HBS): static
+    public function setSelorogieAgSHBS(bool $Selorogie_AgS_HBS): static
     {
-        $this->Selorogie_AgÂ_HBS = $Selorogie_AgÂ_HBS;
+        $this->Selorogie_AgS_HBS = $Selorogie_AgS_HBS;
 
         return $this;
     }

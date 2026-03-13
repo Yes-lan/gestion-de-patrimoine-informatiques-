@@ -1,0 +1,45 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Opérations - {{ patient.name }} {{ patient.firstName }}{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1 class="mb-3"><i class="bi bi-hospital"></i> Opérations de {{ patient.name }} {{ patient.firstName }}</h1>
+
+    <a href="{{ path('patient_show', {id: patient.id}) }}" class="btn btn-outline-secondary mb-3">
+        <i class="bi bi-arrow-left"></i> Retour patient
+    </a>
+
+    {% if operations is empty %}
+        <div class="alert alert-info">Aucune opération enregistrée pour ce patient.</div>
+    {% else %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Titre</th>
+                        <th>Date</th>
+                        <th>Médecins</th>
+                        <th>Infirmières</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for operation in operations %}
+                        <tr>
+                            <td>{{ operation.titre }}</td>
+                            <td>{{ operation.dateOperation|date('d/m/Y H:i') }}</td>
+                            <td>{{ operation.medecins|length }}</td>
+                            <td>{{ operation.infirmieres|length }}</td>
+                            <td>
+                                <a href="{{ path('operation_afficher', {id: operation.id}) }}" class="btn btn-sm btn-outline-info">Voir</a>
+                                <a href="{{ path('rapport_liste', {operationId: operation.id}) }}" class="btn btn-sm btn-outline-primary">Rapports</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
