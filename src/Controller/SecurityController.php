@@ -19,7 +19,7 @@ final class SecurityController extends AbstractController
     #[Route(path: '/login', name: 'app_login', methods: ['GET', 'POST'])]
     public function login(AuthenticationUtils $authenticationUtils): Response
     {
-        if ($this->getUser()) {
+        if ($this->getUser() instanceof User) {
             if ($this->isGranted("ROLE_ADMIN")) {
                 return $this->redirectToRoute('app_admin_pannel');
             }

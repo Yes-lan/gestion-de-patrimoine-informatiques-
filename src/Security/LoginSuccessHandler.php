@@ -5,20 +5,24 @@ namespace App\Security;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Http\Authentication\AuthenticationSuccessHandlerInterface;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 class LoginSuccessHandler implements AuthenticationSuccessHandlerInterface
 {
+    public function __construct(private UrlGeneratorInterface $urlGenerator)
+    {
+    }
+
     public function onAuthenticationSuccess(Request $request, TokenInterface $token): RedirectResponse
     {
         $user = $token->getUser();
-        
-        // Vérifier si l'utilisateur est admin
-        if (in_array('ROLE_ADMIN', $user->getRoles())) {
-            return new RedirectResponse('/admin-pannel');
+
+        if ($user instanceof UserInterface && in_array('ROLE_ADMIN', $user->getRoles(), true)) {
+            return new RedirectResponse($this->urlGenerator->generate('app_admin_pannel'));
         }
 
-        // Sinon redirection par défaut vers les greffes
-        return new RedirectResponse('/greffe');
+        return new RedirectResponse($this->urlGenerator->generate('app_greffe'));
     }
 }
