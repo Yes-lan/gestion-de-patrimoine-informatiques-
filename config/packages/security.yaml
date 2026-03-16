@@ -32,5 +32,7 @@ security:
         - { path: ^/(_(profiler|wdt)|css|images|js|build)/, roles: PUBLIC_ACCESS }
         - { path: ^/login$, roles: PUBLIC_ACCESS }
         - { path: ^/logout$, roles: PUBLIC_ACCESS }
+        - { path: ^/api/mobile/login$, roles: PUBLIC_ACCESS }
+        - { path: ^/api/mobile, roles: PUBLIC_ACCESS }
         - { path: ^/, roles: ROLE_USER }
         - { path: ^/admin, roles: ROLE_ADMIN }
