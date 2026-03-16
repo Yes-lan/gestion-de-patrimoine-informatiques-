@@ -38,8 +38,16 @@
       <div class="d-flex align-items-center">
         {% if app.user %}
           <div class="me-3 text-white text-end">
-            <div class="fw-bold">{{ app.user.nom|default(app.user.username|default('Utilisateur')) }}{% if app.user.prenom is defined and app.user.prenom %} {{ app.user.prenom }}{% endif %}</div>
-            <div class="small">{{ app.user.email|default('—') }}</div>
+            <div class="fw-bold">
+              {% if app.user.nom is defined and app.user.nom %}
+                {{ app.user.nom }}{% if app.user.prenom is defined and app.user.prenom %} {{ app.user.prenom }}{% endif %}
+              {% elseif app.user.username is defined and app.user.username %}
+                {{ app.user.username }}
+              {% else %}
+                Utilisateur
+              {% endif %}
+            </div>
+            <div class="small">{% if app.user.email is defined and app.user.email %}{{ app.user.email }}{% else %}—{% endif %}</div>
           </div>
           <a class="btn btn-outline-light btn-sm" href="{{ path('app_logout') }}">Se déconnecter</a>
         {% else %}
