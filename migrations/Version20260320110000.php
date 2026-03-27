@@ -101,7 +101,7 @@ final class Version20260320110000 extends AbstractMigration
             $this->addSql("INSERT IGNORE INTO infirmiere(user_id, nom, prenom, email) SELECT id, COALESCE(nom, ''), COALESCE(prenom, ''), email FROM `user` WHERE roles LIKE '%\"ROLE_INFIRMIERE\"%'");
 
         if ($chirurgienTable !== null) {
-            $this->addSql(sprintf("INSERT IGNORE INTO `%s`(user_id, nom, prenom, email, Name) SELECT id, COALESCE(nom, ''), COALESCE(prenom, ''), email, CONCAT(COALESCE(prenom, ''), ' ', COALESCE(nom, '')) FROM `user` WHERE roles LIKE '%%\"ROLE_CHIRURGIEN\"%%'", $chirurgienTable));
+            $this->addSql(sprintf("INSERT IGNORE INTO `%s`(user_id, nom, prenom, email, Name) SELECT id, COALESCE(nom, ''), COALESCE(prenom, ''), email, CONCAT(COALESCE(prenom, ''), ' ', COALESCE(nom, '')) FROM `user` WHERE roles LIKE '%\"ROLE_CHIRURGIEN\"%'", $chirurgienTable));
         }
 
         if ($this->tableExists('operation_chirurgien') && $this->columnExists('operation_chirurgien', 'user_id') && $chirurgienTable !== null) {
