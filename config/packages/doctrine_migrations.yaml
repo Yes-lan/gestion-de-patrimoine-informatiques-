@@ -3,4 +3,4 @@ doctrine_migrations:
         'DoctrineMigrations': '%kernel.project_dir%/migrations'
     enable_profiler: false
     all_or_nothing: false
-    transactional: false
+
