@@ -36,17 +36,21 @@ class Operation
     private int $nbInfirmieres = 0;
 
     /**
-     * @var Collection<int, Chirurgien>
+     * @var Collection<int, User>
      */
-    #[ORM\ManyToMany(targetEntity: Chirurgien::class)]
+    #[ORM\ManyToMany(targetEntity: User::class)]
     #[ORM\JoinTable(name: 'operation_chirurgien')]
+    #[ORM\JoinColumn(name: 'operation_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
+    #[ORM\InverseJoinColumn(name: 'user_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
     private Collection $chirurgiens;
 
     /**
-     * @var Collection<int, Infirmiere>
+     * @var Collection<int, User>
      */
-    #[ORM\ManyToMany(targetEntity: Infirmiere::class)]
+    #[ORM\ManyToMany(targetEntity: User::class)]
     #[ORM\JoinTable(name: 'operation_infirmiere')]
+    #[ORM\JoinColumn(name: 'operation_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
+    #[ORM\InverseJoinColumn(name: 'user_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
     private Collection $infirmieres;
 
     /**
@@ -141,14 +145,14 @@ class Operation
     }
 
     /**
-     * @return Collection<int, Chirurgien>
+     * @return Collection<int, User>
      */
     public function getChirurgiens(): Collection
     {
         return $this->chirurgiens;
     }
 
-    public function addChirurgien(Chirurgien $chirurgien): static
+    public function addChirurgien(User $chirurgien): static
     {
         if (!$this->chirurgiens->contains($chirurgien)) {
             $this->chirurgiens->add($chirurgien);
@@ -157,7 +161,7 @@ class Operation
         return $this;
     }
 
-    public function removeChirurgien(Chirurgien $chirurgien): static
+    public function removeChirurgien(User $chirurgien): static
     {
         $this->chirurgiens->removeElement($chirurgien);
 
@@ -165,14 +169,14 @@ class Operation
     }
 
     /**
-     * @return Collection<int, Infirmiere>
+     * @return Collection<int, User>
      */
     public function getInfirmieres(): Collection
     {
         return $this->infirmieres;
     }
 
-    public function addInfirmiere(Infirmiere $infirmiere): static
+    public function addInfirmiere(User $infirmiere): static
     {
         if (!$this->infirmieres->contains($infirmiere)) {
             $this->infirmieres->add($infirmiere);
@@ -181,7 +185,7 @@ class Operation
         return $this;
     }
 
-    public function removeInfirmiere(Infirmiere $infirmiere): static
+    public function removeInfirmiere(User $infirmiere): static
     {
         $this->infirmieres->removeElement($infirmiere);
 

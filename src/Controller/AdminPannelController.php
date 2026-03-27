@@ -2,15 +2,10 @@
 
 namespace App\Controller;
 
-use App\Entity\Chirurgien;
-use App\Entity\Infirmiere;
-use App\Entity\Medecin;
 use App\Entity\Patient;
 use App\Entity\User;
-use App\Repository\ChirurgienRepository;
-use App\Repository\InfirmiereRepository;
-use App\Repository\MedecinRepository;
 use App\Repository\PatientRepository;
+use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -139,7 +134,7 @@ class AdminPannelController extends AbstractController
     }
 
     #[Route(path: '/admin/medecins', name: 'admin_medecins', methods: ['GET'])]
-    public function medecins(MedecinRepository $medecinRepository): Response
+    public function medecins(UserRepository $userRepository): Response
     {
         $this->denyAccessUnlessGranted('ROLE_ADMIN');
 
@@ -147,12 +142,12 @@ class AdminPannelController extends AbstractController
             'title' => 'Gestion des Médecins',
             'staffLabel' => 'médecin',
             'staffType' => 'medecin',
-            'users' => $medecinRepository->findAll(),
+            'users' => $this->filterUsersByRole($userRepository->findAll(), 'ROLE_MEDECIN'),
         ]);
     }
 
     #[Route(path: '/admin/infirmieres', name: 'admin_infirmieres', methods: ['GET'])]
-    public function infirmieres(InfirmiereRepository $infirmiereRepository): Response
+    public function infirmieres(UserRepository $userRepository): Response
     {
         $this->denyAccessUnlessGranted('ROLE_ADMIN');
 
@@ -160,12 +155,12 @@ class AdminPannelController extends AbstractController
             'title' => 'Gestion des Infirmières',
             'staffLabel' => 'infirmière',
             'staffType' => 'infirmiere',
-            'users' => $infirmiereRepository->findAll(),
+            'users' => $this->filterUsersByRole($userRepository->findAll(), 'ROLE_INFIRMIERE'),
         ]);
     }
 
     #[Route(path: '/admin/chirurgiens', name: 'admin_chirurgiens', methods: ['GET'])]
-    public function chirurgiens(ChirurgienRepository $chirurgienRepository): Response
+    public function chirurgiens(UserRepository $userRepository): Response
     {
         $this->denyAccessUnlessGranted('ROLE_ADMIN');
 
@@ -173,7 +168,7 @@ class AdminPannelController extends AbstractController
             'title' => 'Gestion des Chirurgiens',
             'staffLabel' => 'chirurgien',
             'staffType' => 'chirurgien',
-            'users' => $chirurgienRepository->findAll(),
+            'users' => $this->filterUsersByRole($userRepository->findAll(), 'ROLE_CHIRURGIEN'),
         ]);
     }
 
@@ -193,33 +188,19 @@ class AdminPannelController extends AbstractController
             return new JsonResponse(['success' => false, 'message' => 'Tous les champs sont requis'], 400);
         }
 
-        $existingStaffByEmail = match ($type) {
-            'medecin' => $em->getRepository(Medecin::class)->findOneBy(['email' => $data['email']]),
-            'chirurgien' => $em->getRepository(Chirurgien::class)->findOneBy(['email' => $data['email']]),
-            'infirmiere' => $em->getRepository(Infirmiere::class)->findOneBy(['email' => $data['email']]),
-            default => null,
-        };
+        $existingStaffByEmail = $em->getRepository(User::class)->findOneBy(['email' => $data['email']]);
         if ($existingStaffByEmail) {
             return new JsonResponse(['success' => false, 'message' => 'Cet email existe déjà'], 400);
         }
 
         $user = new User();
         $user->setEmail($data['email']);
+        $user->setNom($data['nom']);
+        $user->setPrenom($data['prenom']);
         $user->setPassword($passwordHasher->hashPassword($user, $data['password']));
         $user->setRoles([$role]);
 
-        $staff = match ($type) {
-            'medecin' => new Medecin(),
-            'chirurgien' => new Chirurgien(),
-            'infirmiere' => new Infirmiere(),
-        };
-
-        $staff->setEmail($data['email']);
-        $staff->setNom($data['nom']);
-        $staff->setPrenom($data['prenom']);
-        $staff->setUser($user);
-
-        $em->persist($staff);
+        $em->persist($user);
         $em->flush();
 
         return new JsonResponse(['success' => true, 'message' => ucfirst($type) . ' créé(e) avec succès']);
@@ -237,13 +218,8 @@ class AdminPannelController extends AbstractController
             return new JsonResponse(['success' => false, 'message' => 'Type de profil invalide'], 400);
         }
 
-        $staff = match ($type) {
-            'medecin' => $em->getRepository(Medecin::class)->find($id),
-            'chirurgien' => $em->getRepository(Chirurgien::class)->find($id),
-            'infirmiere' => $em->getRepository(Infirmiere::class)->find($id),
-            default => null,
-        };
-        if (!$staff) {
+        $user = $em->getRepository(User::class)->find($id);
+        if (!$user || !in_array($role, $user->getRoles(), true)) {
             return new JsonResponse(['success' => false, 'message' => ucfirst($type) . ' non trouvé(e)'], 404);
         }
 
@@ -251,31 +227,14 @@ class AdminPannelController extends AbstractController
             return new JsonResponse(['success' => false, 'message' => 'Email, nom et prénom sont requis'], 400);
         }
 
-        $user = $staff->getUser();
-        if (!$user) {
-            $user = new User();
-            $staff->setUser($user);
-        }
-
-        $existingStaffByEmail = match ($type) {
-            'medecin' => $em->getRepository(Medecin::class)->findOneBy(['email' => $data['email']]),
-            'chirurgien' => $em->getRepository(Chirurgien::class)->findOneBy(['email' => $data['email']]),
-            'infirmiere' => $em->getRepository(Infirmiere::class)->findOneBy(['email' => $data['email']]),
-            default => null,
-        };
-        if ($existingStaffByEmail && $existingStaffByEmail->getId() !== $staff->getId()) {
-            return new JsonResponse(['success' => false, 'message' => 'Cet email existe déjà'], 400);
-        }
-
         $linkedUserWithSameEmail = $em->getRepository(User::class)->findOneBy(['email' => $data['email']]);
         if ($linkedUserWithSameEmail && $linkedUserWithSameEmail->getId() !== $user->getId()) {
             return new JsonResponse(['success' => false, 'message' => 'Cet email existe déjà'], 400);
         }
 
-        $staff->setEmail($data['email']);
-        $staff->setNom($data['nom']);
-        $staff->setPrenom($data['prenom']);
         $user->setEmail($data['email']);
+        $user->setNom($data['nom']);
+        $user->setPrenom($data['prenom']);
         if (!empty($data['password'])) {
             $user->setPassword($passwordHasher->hashPassword($user, $data['password']));
         }
@@ -296,23 +255,16 @@ class AdminPannelController extends AbstractController
             return new JsonResponse(['success' => false, 'message' => 'Type de profil invalide'], 400);
         }
 
-        $staff = match ($type) {
-            'medecin' => $em->getRepository(Medecin::class)->find($id),
-            'chirurgien' => $em->getRepository(Chirurgien::class)->find($id),
-            'infirmiere' => $em->getRepository(Infirmiere::class)->find($id),
-            default => null,
-        };
-        if (!$staff) {
+        $user = $em->getRepository(User::class)->find($id);
+        if (!$user || !in_array($role, $user->getRoles(), true)) {
             return new JsonResponse(['success' => false, 'message' => ucfirst($type) . ' non trouvé(e)'], 404);
         }
-
-        $user = $staff->getUser();
 
         if ($user && $this->getUser() && $user->getId() === $this->getUser()->getId()) {
             return new JsonResponse(['success' => false, 'message' => 'Vous ne pouvez pas supprimer votre propre compte'], 403);
         }
 
-        $em->remove($staff);
+        $em->remove($user);
         $em->flush();
 
         return new JsonResponse(['success' => true, 'message' => ucfirst($type) . ' supprimé(e) avec succès']);

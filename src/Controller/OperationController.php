@@ -2,8 +2,6 @@
 
 namespace App\Controller;
 
-use App\Entity\Infirmiere;
-use App\Entity\Chirurgien;
 use App\Entity\Operation;
 use App\Entity\Patient;
 use App\Entity\User;
@@ -138,43 +136,47 @@ class OperationController extends AbstractController
             return $this->json([]);
         }
 
-        $chirurgiens = $em->getRepository(Chirurgien::class)->createQueryBuilder('c')
-            ->where('LOWER(c.nom) LIKE :q OR LOWER(c.prenom) LIKE :q OR LOWER(c.email) LIKE :q')
+        $users = $em->getRepository(User::class)->createQueryBuilder('u')
+            ->where('LOWER(u.nom) LIKE :q OR LOWER(u.prenom) LIKE :q OR LOWER(u.email) LIKE :q')
+            ->andWhere('u.roles LIKE :roleChirurgien OR u.roles LIKE :roleInfirmiere')
             ->setParameter('q', '%' . mb_strtolower($q) . '%')
-            ->setMaxResults(10)
-            ->getQuery()
-            ->getResult();
-
-        $infirmieres = $em->getRepository(Infirmiere::class)->createQueryBuilder('i')
-            ->where('LOWER(i.nom) LIKE :q OR LOWER(i.prenom) LIKE :q OR LOWER(i.email) LIKE :q')
-            ->setParameter('q', '%' . mb_strtolower($q) . '%')
-            ->setMaxResults(10)
+            ->setParameter('roleChirurgien', '%"ROLE_CHIRURGIEN"%')
+            ->setParameter('roleInfirmiere', '%"ROLE_INFIRMIERE"%')
+            ->setMaxResults(20)
             ->getQuery()
             ->getResult();
 
         $results = [];
-        foreach ($chirurgiens as $c) {
-            $results[] = [
-                'id' => 'chirurgien_' . $c->getId(),
-                'type' => 'chirurgien',
-                'typeId' => $c->getId(),
-                'nom' => $c->getNom(),
-                'prenom' => $c->getPrenom(),
-                'email' => $c->getEmail(),
-                'label' => sprintf('Dr %s %s (Chirurgien)', $c->getPrenom(), $c->getNom()),
-            ];
-        }
 
-        foreach ($infirmieres as $i) {
-            $results[] = [
-                'id' => 'infirmiere_' . $i->getId(),
-                'type' => 'infirmiere',
-                'typeId' => $i->getId(),
-                'nom' => $i->getNom(),
-                'prenom' => $i->getPrenom(),
-                'email' => $i->getEmail(),
-                'label' => sprintf('%s %s (Infirmière)', $i->getPrenom(), $i->getNom()),
-            ];
+        foreach ($users as $staffUser) {
+            $nom = $staffUser->getNom() ?? '';
+            $prenom = $staffUser->getPrenom() ?? '';
+            $email = $staffUser->getEmail() ?? '';
+            $roles = $staffUser->getRoles();
+
+            if (in_array('ROLE_CHIRURGIEN', $roles, true)) {
+                $results[] = [
+                    'id' => 'chirurgien_' . $staffUser->getId(),
+                    'type' => 'chirurgien',
+                    'typeId' => $staffUser->getId(),
+                    'nom' => $nom,
+                    'prenom' => $prenom,
+                    'email' => $email,
+                    'label' => sprintf('Dr %s %s (Chirurgien)', $prenom, $nom),
+                ];
+            }
+
+            if (in_array('ROLE_INFIRMIERE', $roles, true)) {
+                $results[] = [
+                    'id' => 'infirmiere_' . $staffUser->getId(),
+                    'type' => 'infirmiere',
+                    'typeId' => $staffUser->getId(),
+                    'nom' => $nom,
+                    'prenom' => $prenom,
+                    'email' => $email,
+                    'label' => sprintf('%s %s (Infirmière)', $prenom, $nom),
+                ];
+            }
         }
 
         return $this->json($results);
@@ -264,15 +266,15 @@ class OperationController extends AbstractController
             $infirmiereIds = $request->request->all()['infirmiere_ids'] ?? [];
 
             foreach ($chirurgienIds as $chirurgienId) {
-                $chirurgien = $em->getRepository(Chirurgien::class)->find((int) $chirurgienId);
-                if ($chirurgien) {
+                $chirurgien = $em->getRepository(User::class)->find((int) $chirurgienId);
+                if ($chirurgien && in_array('ROLE_CHIRURGIEN', $chirurgien->getRoles(), true)) {
                     $operation->addChirurgien($chirurgien);
                 }
             }
 
             foreach ($infirmiereIds as $infirmiereId) {
-                $infirmiere = $em->getRepository(Infirmiere::class)->find((int) $infirmiereId);
-                if ($infirmiere) {
+                $infirmiere = $em->getRepository(User::class)->find((int) $infirmiereId);
+                if ($infirmiere && in_array('ROLE_INFIRMIERE', $infirmiere->getRoles(), true)) {
                     $operation->addInfirmiere($infirmiere);
                 }
             }

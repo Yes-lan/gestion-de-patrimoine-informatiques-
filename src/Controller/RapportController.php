@@ -45,13 +45,13 @@ class RapportController extends AbstractController
         }
 
         foreach ($operation->getChirurgiens() as $chirurgien) {
-            if ($chirurgien->getUser()?->getId() === $user->getId()) {
+            if ($chirurgien->getId() === $user->getId()) {
                 return;
             }
         }
 
         foreach ($operation->getInfirmieres() as $infirmiere) {
-            if ($infirmiere->getUser()?->getId() === $user->getId()) {
+            if ($infirmiere->getId() === $user->getId()) {
                 return;
             }
         }
