@@ -96,6 +96,9 @@ RUN set -eux; \
 COPY --link --exclude=frankenphp/ . ./
 
 RUN set -eux; \
+	npm ci; \
+	npm run build; \
+	rm -rf node_modules; \
 	mkdir -p var/cache var/log; \
 	composer dump-autoload --classmap-authoritative --no-dev; \
 	composer dump-env prod; \
