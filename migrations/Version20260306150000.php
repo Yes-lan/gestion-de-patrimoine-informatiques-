@@ -21,6 +21,7 @@ final class Version20260306150000 extends AbstractMigration
             if (!$table->hasColumn('user_id')) {
                 $this->addSql('ALTER TABLE Patient ADD user_id INT DEFAULT NULL');
             }
+            $this->addSql('UPDATE Patient p LEFT JOIN `user` u ON u.id = p.user_id SET p.user_id = NULL WHERE p.user_id IS NOT NULL AND u.id IS NULL');
             if (!$table->hasForeignKey('FK_PATIENT_USER')) {
                 $this->addSql('ALTER TABLE Patient ADD CONSTRAINT FK_PATIENT_USER FOREIGN KEY (user_id) REFERENCES `user` (id)');
             }
@@ -34,6 +35,7 @@ final class Version20260306150000 extends AbstractMigration
             if (!$table->hasColumn('user_id')) {
                 $this->addSql('ALTER TABLE medecin ADD user_id INT NOT NULL');
             }
+            $this->addSql('DELETE m FROM medecin m LEFT JOIN `user` u ON u.id = m.user_id WHERE u.id IS NULL');
             if ($table->hasColumn('password')) {
                 $this->addSql('ALTER TABLE medecin DROP password');
             }
@@ -50,6 +52,7 @@ final class Version20260306150000 extends AbstractMigration
             if (!$table->hasColumn('user_id')) {
                 $this->addSql('ALTER TABLE Chirurgien ADD user_id INT NOT NULL');
             }
+            $this->addSql('DELETE c FROM Chirurgien c LEFT JOIN `user` u ON u.id = c.user_id WHERE u.id IS NULL');
             if ($table->hasColumn('password')) {
                 $this->addSql('ALTER TABLE Chirurgien DROP password');
             }
@@ -66,6 +69,7 @@ final class Version20260306150000 extends AbstractMigration
             if (!$table->hasColumn('user_id')) {
                 $this->addSql('ALTER TABLE infirmiere ADD user_id INT NOT NULL');
             }
+            $this->addSql('DELETE i FROM infirmiere i LEFT JOIN `user` u ON u.id = i.user_id WHERE u.id IS NULL');
             if ($table->hasColumn('password')) {
                 $this->addSql('ALTER TABLE infirmiere DROP password');
             }

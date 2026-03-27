@@ -14,11 +14,6 @@ final class Version20260320110000 extends AbstractMigration
         return 'Migrate staff entities to user roles and drop medecin/chirurgien/infirmiere tables';
     }
 
-    public function isTransactional(): bool
-    {
-        return false;
-    }
-
     public function up(Schema $schema): void
     {
         if (!$this->columnExists('user', 'nom')) {
