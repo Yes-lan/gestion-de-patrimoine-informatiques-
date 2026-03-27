@@ -14,6 +14,11 @@ final class Version20260320110000 extends AbstractMigration
         return 'Migrate staff entities to user roles and drop medecin/chirurgien/infirmiere tables';
     }
 
+    public function isTransactional(): bool
+    {
+        return false;
+    }
+
     public function up(Schema $schema): void
     {
         if (!$this->columnExists('user', 'nom')) {
@@ -80,6 +85,8 @@ final class Version20260320110000 extends AbstractMigration
 
     public function down(Schema $schema): void
     {
+        $this->addSql('SET FOREIGN_KEY_CHECKS=0');
+
         if (!$this->tableExists('medecin')) {
             $this->addSql('CREATE TABLE medecin (id INT AUTO_INCREMENT NOT NULL, user_id INT NOT NULL, nom VARCHAR(100) NOT NULL, prenom VARCHAR(100) NOT NULL, email VARCHAR(180) NOT NULL, UNIQUE INDEX UNIQ_MEDECIN_USER (user_id), UNIQUE INDEX UNIQ_MEDECIN_EMAIL (email), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
             $this->addSql('ALTER TABLE medecin ADD CONSTRAINT FK_MEDECIN_USER FOREIGN KEY (user_id) REFERENCES `user` (id) ON DELETE CASCADE');
@@ -131,6 +138,8 @@ final class Version20260320110000 extends AbstractMigration
         if ($this->columnExists('user', 'prenom')) {
             $this->addSql('ALTER TABLE `user` DROP COLUMN prenom');
         }
+
+        $this->addSql('SET FOREIGN_KEY_CHECKS=1');
     }
 
     private function tableExists(string $tableName): bool
