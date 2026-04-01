@@ -6,9 +6,7 @@ use App\Entity\User;
 use App\Form\ChangePasswordType;
 use App\Model\ChangePasswordInput;
 use Doctrine\ORM\EntityManagerInterface;
-use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
@@ -18,16 +16,8 @@ use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 
 final class SecurityController extends AbstractController
 {
-    public function __construct(
-        #[Autowire(service: 'monolog.logger.failed_login')]
-        private readonly LoggerInterface $failedLoginLogger,
-        #[Autowire('%kernel.logs_dir%/failed_login.log')]
-        private readonly string $failedLoginLogFile,
-    ) {
-    }
-
     #[Route(path: '/login', name: 'app_login', methods: ['GET', 'POST'])]
-    public function login(AuthenticationUtils $authenticationUtils, Request $request): Response
+    public function login(AuthenticationUtils $authenticationUtils): Response
     {
         if ($this->getUser() instanceof User) {
             if ($this->isGranted("ROLE_ADMIN")) {
@@ -40,18 +30,6 @@ final class SecurityController extends AbstractController
         $lastUsername = $authenticationUtils->getLastUsername();
 
         if ($error) {
-            $payload = [
-                'source' => 'web_form_login',
-                'attempted_login' => mb_strtolower(trim((string) $lastUsername)),
-                'ip' => $request->getClientIp(),
-                'user_agent' => $request->headers->get('User-Agent'),
-                'path' => $request->getPathInfo(),
-                'failed_at_utc' => (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format(\DateTimeInterface::ATOM),
-                'error' => $error->getMessageKey(),
-            ];
-
-            $this->failedLoginLogger->info('Failed web login attempt', $payload);
-            $this->appendFailedLoginToFile($payload);
             $this->addFlash('danger', 'Identifiants invalides.');
         }
 
@@ -99,19 +77,5 @@ final class SecurityController extends AbstractController
         return $this->render('security/settings.html.twig', [
             'form' => $form->createView(),
         ]);
-    }
-
-    private function appendFailedLoginToFile(array $payload): void
-    {
-        $logDir = \dirname($this->failedLoginLogFile);
-        if (!is_dir($logDir)) {
-            @mkdir($logDir, 0777, true);
-        }
-
-        @file_put_contents(
-            $this->failedLoginLogFile,
-            json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL,
-            FILE_APPEND | LOCK_EX,
-        );
     }
 }

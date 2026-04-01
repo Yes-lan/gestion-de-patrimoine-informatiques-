@@ -16,7 +16,6 @@ use App\Repository\RendezVousRepository;
 use App\Repository\UserRepository;
 use App\Service\MobileJwtService;
 use Doctrine\ORM\EntityManagerInterface;
-use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -30,8 +29,6 @@ final class MobileApiController extends AbstractController
 {
     public function __construct(
         private readonly MobileJwtService $mobileJwtService,
-        #[Autowire(service: 'monolog.logger.failed_login')]
-        private readonly LoggerInterface $failedLoginLogger,
         #[Autowire('%kernel.logs_dir%/failed_login.log')]
         private readonly string $failedLoginLogFile,
         #[Autowire('%kernel.project_dir%/public/uploads/patient-photos')]
@@ -65,7 +62,6 @@ final class MobileApiController extends AbstractController
                 'error' => 'missing_credentials',
             ];
 
-            $this->failedLoginLogger->info('Failed mobile login attempt', $payload);
             $this->appendFailedLoginToFile($payload);
             return $this->json(['message' => 'Email et mot de passe requis.'], JsonResponse::HTTP_BAD_REQUEST);
         }
@@ -82,7 +78,6 @@ final class MobileApiController extends AbstractController
                 'error' => 'invalid_credentials',
             ];
 
-            $this->failedLoginLogger->info('Failed mobile login attempt', $payload);
             $this->appendFailedLoginToFile($payload);
             return $this->json(['message' => 'Identifiants invalides.'], JsonResponse::HTTP_UNAUTHORIZED);
         }
@@ -104,9 +99,20 @@ final class MobileApiController extends AbstractController
             @mkdir($logDir, 0777, true);
         }
 
+        $line = sprintf(
+            '[%s] source=%s ip=%s login=%s path=%s error="%s" user_agent="%s"',
+            $payload['failed_at_utc'] ?? '',
+            $payload['source'] ?? '',
+            $payload['ip'] ?? '',
+            $payload['attempted_login'] ?? '',
+            $payload['path'] ?? '',
+            str_replace('"', '\\"', (string) ($payload['error'] ?? '')),
+            str_replace('"', '\\"', (string) ($payload['user_agent'] ?? '')),
+        );
+
         @file_put_contents(
             $this->failedLoginLogFile,
-            json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL,
+            $line . PHP_EOL,
             FILE_APPEND | LOCK_EX,
         );
     }
