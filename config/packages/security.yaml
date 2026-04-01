@@ -22,6 +22,7 @@ security:
                 login_path: app_login
                 check_path: app_login
                 success_handler: App\Security\LoginSuccessHandler
+                failure_handler: App\Security\LoginFailureHandler
 
             logout:
                 path: app_logout

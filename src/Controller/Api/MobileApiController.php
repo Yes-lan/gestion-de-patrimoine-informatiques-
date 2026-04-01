@@ -4,16 +4,19 @@ namespace App\Controller\Api;
 
 use App\Entity\Operation;
 use App\Entity\Patient;
+use App\Entity\PatientNote;
 use App\Entity\PatientPhoto;
 use App\Entity\Rapport;
 use App\Entity\RendezVous;
 use App\Entity\User;
+use App\Repository\PatientNoteRepository;
 use App\Repository\PatientPhotoRepository;
 use App\Repository\PatientRepository;
 use App\Repository\RendezVousRepository;
 use App\Repository\UserRepository;
 use App\Service\MobileJwtService;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -27,6 +30,10 @@ final class MobileApiController extends AbstractController
 {
     public function __construct(
         private readonly MobileJwtService $mobileJwtService,
+        #[Autowire(service: 'monolog.logger.failed_login')]
+        private readonly LoggerInterface $failedLoginLogger,
+        #[Autowire('%kernel.logs_dir%/failed_login.log')]
+        private readonly string $failedLoginLogFile,
         #[Autowire('%kernel.project_dir%/public/uploads/patient-photos')]
         private readonly string $photoUploadDir,
     ) {
@@ -45,13 +52,38 @@ final class MobileApiController extends AbstractController
 
         $email = mb_strtolower(trim((string) ($data['email'] ?? '')));
         $password = (string) ($data['password'] ?? '');
+        $clientIp = $request->getClientIp();
 
         if ($email === '' || $password === '') {
+            $payload = [
+                'source' => 'mobile_api_login',
+                'attempted_login' => $email,
+                'ip' => $clientIp,
+                'user_agent' => $request->headers->get('User-Agent'),
+                'path' => $request->getPathInfo(),
+                'failed_at_utc' => (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format(\DateTimeInterface::ATOM),
+                'error' => 'missing_credentials',
+            ];
+
+            $this->failedLoginLogger->info('Failed mobile login attempt', $payload);
+            $this->appendFailedLoginToFile($payload);
             return $this->json(['message' => 'Email et mot de passe requis.'], JsonResponse::HTTP_BAD_REQUEST);
         }
 
         $user = $userRepository->findOneBy(['email' => $email]);
         if (!$user instanceof User || !$passwordHasher->isPasswordValid($user, $password)) {
+            $payload = [
+                'source' => 'mobile_api_login',
+                'attempted_login' => $email,
+                'ip' => $clientIp,
+                'user_agent' => $request->headers->get('User-Agent'),
+                'path' => $request->getPathInfo(),
+                'failed_at_utc' => (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format(\DateTimeInterface::ATOM),
+                'error' => 'invalid_credentials',
+            ];
+
+            $this->failedLoginLogger->info('Failed mobile login attempt', $payload);
+            $this->appendFailedLoginToFile($payload);
             return $this->json(['message' => 'Identifiants invalides.'], JsonResponse::HTTP_UNAUTHORIZED);
         }
 
@@ -63,6 +95,20 @@ final class MobileApiController extends AbstractController
             'expires_in' => 86400,
             'user' => $this->serializeUser($user),
         ]);
+    }
+
+    private function appendFailedLoginToFile(array $payload): void
+    {
+        $logDir = \dirname($this->failedLoginLogFile);
+        if (!is_dir($logDir)) {
+            @mkdir($logDir, 0777, true);
+        }
+
+        @file_put_contents(
+            $this->failedLoginLogFile,
+            json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL,
+            FILE_APPEND | LOCK_EX,
+        );
     }
 
     #[Route('/me', name: 'me', methods: ['GET'])]
@@ -277,6 +323,85 @@ final class MobileApiController extends AbstractController
         ], JsonResponse::HTTP_CREATED);
     }
 
+    #[Route('/patients/{id<\d+>}/notes', name: 'patient_notes', methods: ['GET'])]
+    public function patientNotes(
+        int $id,
+        Request $request,
+        UserRepository $userRepository,
+        PatientRepository $patientRepository,
+        PatientNoteRepository $patientNoteRepository,
+    ): JsonResponse {
+        $user = $this->requireApiUser($request, $userRepository);
+        if ($user instanceof JsonResponse) {
+            return $user;
+        }
+
+        $patient = $patientRepository->find($id);
+        if (!$patient instanceof Patient) {
+            return $this->json(['message' => 'Patient introuvable.'], JsonResponse::HTTP_NOT_FOUND);
+        }
+
+        if (!$this->canAccessPatient($user, $patient, $patientRepository)) {
+            return $this->json(['message' => 'Accès refusé à ce patient.'], JsonResponse::HTTP_FORBIDDEN);
+        }
+
+        $notes = $patientNoteRepository->createQueryBuilder('n')
+            ->where('n.patient = :patient')
+            ->setParameter('patient', $patient)
+            ->orderBy('n.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+
+        return $this->json([
+            'notes' => array_map(fn (PatientNote $note): array => $this->serializePatientNote($note), $notes),
+        ]);
+    }
+
+    #[Route('/patients/{id<\d+>}/notes', name: 'patient_notes_add', methods: ['POST'])]
+    public function addPatientNote(
+        int $id,
+        Request $request,
+        UserRepository $userRepository,
+        PatientRepository $patientRepository,
+        EntityManagerInterface $entityManager,
+    ): JsonResponse {
+        $user = $this->requireApiUser($request, $userRepository);
+        if ($user instanceof JsonResponse) {
+            return $user;
+        }
+
+        $patient = $patientRepository->find($id);
+        if (!$patient instanceof Patient) {
+            return $this->json(['message' => 'Patient introuvable.'], JsonResponse::HTTP_NOT_FOUND);
+        }
+
+        if (!$this->canAccessPatient($user, $patient, $patientRepository)) {
+            return $this->json(['message' => 'Accès refusé à ce patient.'], JsonResponse::HTTP_FORBIDDEN);
+        }
+
+        $data = $this->decodeJsonRequest($request);
+        if ($data instanceof JsonResponse) {
+            return $data;
+        }
+
+        $content = trim((string) ($data['content'] ?? ''));
+        if ($content === '') {
+            return $this->json(['message' => 'La note ne peut pas être vide.'], JsonResponse::HTTP_BAD_REQUEST);
+        }
+
+        $note = new PatientNote();
+        $note->setPatient($patient);
+        $note->setCreatedBy($user);
+        $note->setContent($content);
+
+        $entityManager->persist($note);
+        $entityManager->flush();
+
+        return $this->json([
+            'note' => $this->serializePatientNote($note),
+        ], JsonResponse::HTTP_CREATED);
+    }
+
     private function decodeJsonRequest(Request $request): array|JsonResponse
     {
         try {
@@ -325,6 +450,21 @@ final class MobileApiController extends AbstractController
             'id' => $user->getId(),
             'email' => $user->getEmail(),
             'roles' => $user->getRoles(),
+        ];
+    }
+
+    private function serializePatientNote(PatientNote $note): array
+    {
+        return [
+            'id' => $note->getId(),
+            'content' => $note->getContent(),
+            'createdBy' => [
+                'id' => $note->getCreatedBy()?->getId(),
+                'email' => $note->getCreatedBy()?->getEmail(),
+                'name' => $note->getCreatedBy()?->getPrenom() . ' ' . $note->getCreatedBy()?->getNom(),
+            ],
+            'createdAt' => $note->getCreatedAt()?->format('c'),
+            'updatedAt' => $note->getUpdatedAt()?->format('c'),
         ];
     }
 

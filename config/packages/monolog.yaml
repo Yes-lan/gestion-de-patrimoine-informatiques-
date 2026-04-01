@@ -1,6 +1,15 @@
 monolog:
     channels:
         - deprecation # Deprecations are logged in the dedicated "deprecation" channel when it exists
+        - failed_login
+
+    handlers:
+        failed_login:
+            type: stream
+            path: "%kernel.logs_dir%/failed_login.log"
+            level: info
+            channels: [failed_login]
+            formatter: monolog.formatter.json
 
 when@dev:
     monolog:
