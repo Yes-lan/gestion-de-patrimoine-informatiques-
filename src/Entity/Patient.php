@@ -31,6 +31,9 @@ class Patient
     #[ORM\Column(type: 'boolean', nullable: true)]
     private ?bool $alive = null;
 
+    #[ORM\Column(name: 'needs_greffe', type: 'boolean', nullable: true)]
+    private ?bool $needsGreffe = null;
+
     /**
      * @var Collection<int, User>
      */
@@ -120,6 +123,18 @@ class Patient
     public function setIsAlive(?bool $alive): static
     {
         $this->alive = $alive;
+
+        return $this;
+    }
+
+    public function isNeedsGreffe(): ?bool
+    {
+        return $this->needsGreffe;
+    }
+
+    public function setNeedsGreffe(?bool $needsGreffe): static
+    {
+        $this->needsGreffe = $needsGreffe;
 
         return $this;
     }

@@ -6,6 +6,7 @@ use App\Entity\Patient;
 use App\Entity\Greffe;
 use App\Entity\User;
 use App\Repository\PatientRepository;
+use App\Repository\PatientNoteRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -34,7 +35,7 @@ final class PatientController extends AbstractController
     }
 
     #[Route('/patient/{id<\d+>}', name: 'patient_show', methods: ['GET'])]
-    public function show(int $id, ManagerRegistry $doctrine, PatientRepository $patientRepository): Response
+    public function show(int $id, ManagerRegistry $doctrine, PatientRepository $patientRepository, PatientNoteRepository $patientNoteRepository): Response
     {
         $em = $doctrine->getManager();
         $patient = $em->getRepository(Patient::class)->find($id);
@@ -50,8 +51,14 @@ final class PatientController extends AbstractController
             }
         }
 
+        $notes = $patientNoteRepository->findBy(
+            ['patient' => $patient],
+            ['createdAt' => 'DESC']
+        );
+
         return $this->render('patient/show.html.twig', [
             'patient' => $patient,
+            'notes' => $notes,
         ]);
     }
 

@@ -10,8 +10,8 @@ use App\Entity\Rapport;
 use App\Entity\RendezVous;
 use App\Entity\User;
 use App\Repository\PatientNoteRepository;
-use App\Repository\PatientPhotoRepository;
 use App\Repository\PatientRepository;
+use App\Repository\PatientPhotoRepository;
 use App\Repository\RendezVousRepository;
 use App\Repository\UserRepository;
 use App\Service\MobileJwtService;
@@ -141,6 +141,18 @@ final class MobileApiController extends AbstractController
 
         $q = mb_strtolower(trim((string) $request->query->get('q', '')));
         $qb = $patientRepository->createQueryBuilder('p')->orderBy('p.Name', 'ASC')->addOrderBy('p.FirstName', 'ASC');
+
+        // filter by alive (0 or 1)
+        $aliveFilter = $request->query->get('alive', null);
+        if ($aliveFilter !== null && $aliveFilter !== '') {
+            $qb->andWhere('p.alive = :alive')->setParameter('alive', (int) $aliveFilter);
+        }
+
+        // filter by needsGreffe (0 or 1)
+        $needsGreffeFilter = $request->query->get('needsGreffe', null);
+        if ($needsGreffeFilter !== null && $needsGreffeFilter !== '') {
+            $qb->andWhere('p.needsGreffe = :needs')->setParameter('needs', (int) $needsGreffeFilter);
+        }
 
         if (!$this->isAdmin($user)) {
             $allowedPatientIds = $patientRepository->findPatientIdsByCaregiver($user);
@@ -361,6 +373,87 @@ final class MobileApiController extends AbstractController
         return $this->json([
             'notes' => array_map(fn (PatientNote $note): array => $this->serializePatientNote($note), $notes),
         ]);
+    }
+
+    #[Route('/notes/{id<\d+>}', name: 'patient_note_update', methods: ['PUT'])]
+    public function updatePatientNote(
+        int $id,
+        Request $request,
+        UserRepository $userRepository,
+        PatientNoteRepository $patientNoteRepository,
+        EntityManagerInterface $entityManager,
+        PatientRepository $patientRepository,
+    ): JsonResponse {
+        $user = $this->requireApiUser($request, $userRepository);
+        if ($user instanceof JsonResponse) {
+            return $user;
+        }
+
+        $note = $patientNoteRepository->find($id);
+        if (!$note instanceof PatientNote) {
+            return $this->json(['message' => 'Note introuvable.'], JsonResponse::HTTP_NOT_FOUND);
+        }
+
+        // Access control: allow only admins or caregivers assigned to the patient, or the note author
+        $isAdmin = $this->isAdmin($user);
+        $isAuthor = $note->getCreatedBy()?->getId() === $user->getId();
+        $isCaregiver = $patientRepository->userCanAccessPatient($user, (int) $note->getPatient()?->getId());
+
+        if (!($isAdmin || $isCaregiver || $isAuthor)) {
+            return $this->json(['message' => 'Permission refusée.'], JsonResponse::HTTP_FORBIDDEN);
+        }
+
+        $data = $this->decodeJsonRequest($request);
+        if ($data instanceof JsonResponse) {
+            return $data;
+        }
+
+        $content = trim((string) ($data['content'] ?? ''));
+        if ($content === '') {
+            return $this->json(['message' => 'La note ne peut pas être vide.'], JsonResponse::HTTP_BAD_REQUEST);
+        }
+
+        $note->setContent($content);
+        $note->setUpdatedAt(new \DateTimeImmutable());
+
+        $entityManager->persist($note);
+        $entityManager->flush();
+
+        return $this->json(['note' => $this->serializePatientNote($note)]);
+    }
+
+    #[Route('/notes/{id<\d+>}', name: 'patient_note_delete', methods: ['DELETE'])]
+    public function deletePatientNote(
+        int $id,
+        Request $request,
+        UserRepository $userRepository,
+        PatientNoteRepository $patientNoteRepository,
+        EntityManagerInterface $entityManager,
+        PatientRepository $patientRepository,
+    ): JsonResponse {
+        $user = $this->requireApiUser($request, $userRepository);
+        if ($user instanceof JsonResponse) {
+            return $user;
+        }
+
+        $note = $patientNoteRepository->find($id);
+        if (!$note instanceof PatientNote) {
+            return $this->json(['message' => 'Note introuvable.'], JsonResponse::HTTP_NOT_FOUND);
+        }
+
+        // Access control: allow only admins or caregivers assigned to the patient, or the note author
+        $isAdmin = $this->isAdmin($user);
+        $isAuthor = $note->getCreatedBy()?->getId() === $user->getId();
+        $isCaregiver = $patientRepository->userCanAccessPatient($user, (int) $note->getPatient()?->getId());
+
+        if (!($isAdmin || $isCaregiver || $isAuthor)) {
+            return $this->json(['message' => 'Permission refusée.'], JsonResponse::HTTP_FORBIDDEN);
+        }
+
+        $entityManager->remove($note);
+        $entityManager->flush();
+
+        return $this->json([], JsonResponse::HTTP_NO_CONTENT);
     }
 
     #[Route('/patients/{id<\d+>}/notes', name: 'patient_notes_add', methods: ['POST'])]

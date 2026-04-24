@@ -14,19 +14,29 @@
     {# Assets compilés par Webpack Encore #}
     {{ encore_entry_link_tags('app') }}
 
+    {# Small override: ensure navbar is flush to top (no extra body padding).
+       We prefer adjusting source CSS (assets/styles/app.css), but keep a
+       defensive override here so changes take effect immediately without
+       requiring a webpack encore rebuild. #}
+    <style>
+      body { padding-top: 0 !important; }
+    </style>
+
     {% block styles %}{% endblock %}
 </head>
 <body class="bg-light">
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
-  <div class="container">
-    <a class="navbar-brand" href="{{ path('app_logout') ?? path('app_greffe') }}">Xynpo</a>
+  <div class="container-fluid px-0">
+    <div class="container">
+      <a class="navbar-brand" href="{{ path('app_logout') ?? path('app_greffe') }}">Xynpo</a>
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
       <span class="navbar-toggler-icon"></span>
     </button>
 
     <div class="collapse navbar-collapse" id="mainNav">
+      {% if app.user %}
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
         <li class="nav-item"><a class="nav-link" href="{{ path('app_greffe') }}">Greffes</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ path('app_operation') }}">Opérations</a></li>
@@ -34,6 +44,7 @@
         <li class="nav-item"><a class="nav-link" href="{{ path('app_admin_pannel') }}">Admin</a></li>
         {% endif %}
       </ul>
+      {% endif %}
 
       <div class="d-flex align-items-center">
         {% if app.user %}
@@ -51,14 +62,21 @@
           </div>
           <a class="btn btn-outline-light btn-sm" href="{{ path('app_logout') }}">Se déconnecter</a>
         {% else %}
-          <a class="btn btn-outline-light btn-sm" href="{{ path('app_login') }}">Se connecter</a>
+          {# Don't show the login button when already on the login page (#app_login) #}
+          {% set current_route = app.request is defined and app.request.attributes.get('_route') is defined ? app.request.attributes.get('_route') : null %}
+          {% if current_route != 'app_login' %}
+            <a class="btn btn-outline-light btn-sm" href="{{ path('app_login') }}">Se connecter</a>
+          {% endif %}
         {% endif %}
       </div>
+      </div>
     </div>
-  </div>
 </nav>
 
-<main class="container my-4">
+{% set current_route = app.request is defined and app.request.attributes.get('_route') is defined ? app.request.attributes.get('_route') : null %}
+{% set is_login = current_route == 'app_login' %}
+
+<main class="{{ is_login ? 'login-main' : 'container my-4' }}">
   {% block body %}{% endblock %}
 </main>
 

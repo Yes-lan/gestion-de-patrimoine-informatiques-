@@ -64,10 +64,28 @@
       {% endfor %}
     </div>
   {% endif %}
+  <h2 class="mt-4">Notes de consultation</h2>
+  {% if notes is defined and notes is not empty %}
+    <div class="list-group mb-3">
+      {% for note in notes %}
+        <div class="list-group-item">
+          <div class="d-flex justify-content-between">
+            <div>
+              <strong>{{ note.createdBy ? (note.createdBy.prenom ~ ' ' ~ note.createdBy.nom) : 'Utilisateur inconnu' }}</strong>
+            </div>
+            <small class="text-muted">{{ note.createdAt ? note.createdAt|date('d/m/Y H:i') : '-' }}</small>
+          </div>
+          <div class="mt-2">{{ note.content|nl2br }}</div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p>Aucune note.</p>
+  {% endif %}
 
   <div class="d-flex flex-wrap gap-2 mt-3">
     <a class="btn btn-secondary" href="{{ path('app_greffe') }}">Retour à la liste</a>
     <a class="btn btn-primary" href="{{ path('patient_export', {'id': patient.id}) }}">Télécharger la fiche (DOCX)</a>
-</div>
+  </div>
 </div>
 {% endblock %}
