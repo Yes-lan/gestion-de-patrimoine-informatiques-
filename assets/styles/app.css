@@ -68,6 +68,41 @@ body {
   padding: 24px; /* small padding for mobile spacing */
 }
 
+/* Patient summary card-based layout */
+.patient-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+}
+
+@media (min-width: 900px) {
+  .patient-grid {
+    grid-template-columns: 1fr 360px;
+  }
+}
+
+.patient-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 18px;
+  box-shadow: 0 6px 18px rgba(15,23,42,0.06);
+}
+
+.patient-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.patient-meta { color: #6b7280; }
+
+.patient-section-title { margin-top: 0; margin-bottom: 12px; font-size: 1.1rem; font-weight:700 }
+
+.patient-note { white-space: pre-wrap; }
+
+.badge-dead { background: #dc3545; color: #fff; padding: 4px 8px; border-radius: 6px; font-weight:700 }
+
 /* Login form centered */
 .login-page {
   display: flex;

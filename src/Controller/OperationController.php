@@ -232,8 +232,13 @@ class OperationController extends AbstractController
         EntityManagerInterface $em,
         PatientRepository $patientRepository
     ): Response {
-        if (!$this->isGranted('ROLE_CHIRURGIEN') && !$this->isGranted('ROLE_INFIRMIERE') && !$this->isGranted('ROLE_ADMIN')) {
-            throw $this->createAccessDeniedException('Accès réservé au personnel soignant.');
+        // Allow only chirurgien, infirmiere and admin to create operations (medecins cannot).
+        if (
+            !$this->isGranted('ROLE_CHIRURGIEN') &&
+            !$this->isGranted('ROLE_INFIRMIERE') &&
+            !$this->isGranted('ROLE_ADMIN')
+        ) {
+            throw $this->createAccessDeniedException('Accès réservé au personnel soignant habilité.');
         }
 
         $operation = new Operation();

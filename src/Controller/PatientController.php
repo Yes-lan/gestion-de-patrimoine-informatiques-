@@ -65,7 +65,7 @@ final class PatientController extends AbstractController
     #[Route('/patient/create', name: 'patient_create', methods: ['GET', 'POST'])]
     public function create(Request $request, EntityManagerInterface $em): Response
     {
-        if (!$this->isGranted('ROLE_MEDECIN') && !$this->isGranted('ROLE_INFIRMIERE') && !$this->isGranted('ROLE_ADMIN')) {
+        if (!$this->isGranted('ROLE_MEDECIN') && !$this->isGranted('ROLE_INFIRMIERE') && !$this->isGranted('ROLE_CHIRURGIEN') && !$this->isGranted('ROLE_ADMIN')) {
             throw $this->createAccessDeniedException('Accès réservé au personnel soignant.');
         }
 

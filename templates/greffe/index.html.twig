@@ -10,7 +10,7 @@
     <a href="{{ path('app_settings') }}" class="btn btn-outline-secondary">
       <i class="bi bi-gear"></i> Paramètres
     </a>
-    {% if is_granted('ROLE_MEDECIN') or is_granted('ROLE_INFIRMIERE') %}
+    {% if is_granted('ROLE_MEDECIN') or is_granted('ROLE_INFIRMIERE') or is_granted('ROLE_CHIRURGIEN') %}
       <a href="{{ path('patient_create') }}" class="btn btn-success">
         <i class="bi bi-plus-circle"></i> Créer un patient
       </a>

@@ -4,88 +4,102 @@
 
 {% block body %}
 <div class="container mt-4">
-  <h1>Patient: {{ patient.name }} {{ patient.firstName }}</h1>
-  <ul class="list-group mb-3">
-    <li class="list-group-item"><strong>Numéro dossier:</strong> {{ patient.id }}</li>
-    <li class="list-group-item"><strong>Ville:</strong> {{ patient.ville }}</li>
-    <li class="list-group-item">
-      <strong>État:</strong> 
-      {% if patient.isAlive %}
-        <span class="badge bg-success">Vivant</span>
-      {% else %}
-        <span class="badge bg-danger">Décédé</span>
-      {% endif %}
-    </li>
-  </ul>
-
-  <h2>Greffes</h2>
-  {% if patient.greffes is empty %}
-    <p>Aucune greffe enregistrée pour ce patient.</p>
-  {% else %}
-    <div class="list-group">
-      {% for g in patient.greffes %}
-        <div class="list-group-item">
-          <strong>Type:</strong> {{ g.type }}<br>
-          <strong>Fonctionnel:</strong> {{ g.fonctionnel ? 'Oui' : 'Non' }}<br>
-          <strong>Date fin de fonction:</strong> {{ g.dateFinDeFonction ? g.dateFinDeFonction|date('Y-m-d') : '-' }}
+  <div class="patient-grid">
+    <div>
+      <div class="patient-card">
+        <div class="patient-header">
+          <div>
+            <h1 style="margin:0">{{ patient.name }} {{ patient.firstName }}</h1>
+            <div class="patient-meta">Dossier #: {{ patient.id }} • Ville: {{ patient.ville }}</div>
+          </div>
+          <div>
+            {% if patient.isAlive %}
+              <span class="badge bg-success">Vivant</span>
+            {% else %}
+              <span class="badge-dead">Décédé</span>
+            {% endif %}
+          </div>
         </div>
-      {% endfor %}
-    </div>
-  {% endif %}
+
+        <hr>
+
+        <h3 class="patient-section-title">Greffes</h3>
+        {% if patient.greffes is empty %}
+          <p class="text-muted">Aucune greffe enregistrée pour ce patient.</p>
+        {% else %}
+          <div class="list-group">
+            {% for g in patient.greffes %}
+              <div class="list-group-item">
+                <strong>Type:</strong> {{ g.type }}<br>
+                <strong>Fonctionnel:</strong> {{ g.fonctionnel ? 'Oui' : 'Non' }}<br>
+                <strong>Date fin de fonction:</strong> {{ g.dateFinDeFonction ? g.dateFinDeFonction|date('Y-m-d') : '-' }}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
 
   {% set now = date() %}
   {% set operationsPrevues = patient.operations|filter(o => o.dateOperation and o.dateOperation >= now) %}
   {% set operationsEffectuees = patient.operations|filter(o => o.dateOperation and o.dateOperation < now) %}
 
-  <h2 class="mt-4">Opérations prévues</h2>
-  {% if operationsPrevues is empty %}
-    <p>Aucune opération prévue.</p>
-  {% else %}
-    <div class="list-group mb-3">
-      {% for operation in operationsPrevues %}
-        <a href="{{ path('operation_afficher', {id: operation.id}) }}" class="list-group-item list-group-item-action">
-          <strong>{{ operation.titre }}</strong><br>
-          <small class="text-muted">Date prévue : {{ operation.dateOperation|date('d/m/Y H:i') }}</small>
-        </a>
-      {% endfor %}
-    </div>
-  {% endif %}
-
-  <h2>Opérations déjà effectuées</h2>
-  {% if operationsEffectuees is empty %}
-    <p>Aucune opération déjà effectuée.</p>
-  {% else %}
-    <div class="list-group">
-      {% for operation in operationsEffectuees %}
-        <a href="{{ path('operation_afficher', {id: operation.id}) }}" class="list-group-item list-group-item-action">
-          <strong>{{ operation.titre }}</strong><br>
-          <small class="text-muted">Date : {{ operation.dateOperation|date('d/m/Y H:i') }}</small>
-        </a>
-      {% endfor %}
-    </div>
-  {% endif %}
-  <h2 class="mt-4">Notes de consultation</h2>
-  {% if notes is defined and notes is not empty %}
-    <div class="list-group mb-3">
-      {% for note in notes %}
-        <div class="list-group-item">
-          <div class="d-flex justify-content-between">
-            <div>
-              <strong>{{ note.createdBy ? (note.createdBy.prenom ~ ' ' ~ note.createdBy.nom) : 'Utilisateur inconnu' }}</strong>
-            </div>
-            <small class="text-muted">{{ note.createdAt ? note.createdAt|date('d/m/Y H:i') : '-' }}</small>
+  <h3 class="patient-section-title mt-4">Opérations prévues</h3>
+        {% if operationsPrevues is empty %}
+          <p class="text-muted">Aucune opération prévue.</p>
+        {% else %}
+          <div class="list-group mb-3">
+            {% for operation in operationsPrevues %}
+              <a href="{{ path('operation_afficher', {id: operation.id}) }}" class="list-group-item list-group-item-action">
+                <strong>{{ operation.titre }}</strong><br>
+                <small class="text-muted">Date prévue : {{ operation.dateOperation|date('d/m/Y H:i') }}</small>
+              </a>
+            {% endfor %}
           </div>
-          <div class="mt-2">{{ note.content|nl2br }}</div>
-        </div>
-      {% endfor %}
-    </div>
-  {% else %}
-    <p>Aucune note.</p>
-  {% endif %}
+        {% endif %}
 
-  <div class="d-flex flex-wrap gap-2 mt-3">
-    <a class="btn btn-secondary" href="{{ path('app_greffe') }}">Retour à la liste</a>
-    <a class="btn btn-primary" href="{{ path('patient_export', {'id': patient.id}) }}">Télécharger la fiche (DOCX)</a>
+        <h3 class="patient-section-title">Opérations déjà effectuées</h3>
+        {% if operationsEffectuees is empty %}
+          <p class="text-muted">Aucune opération déjà effectuée.</p>
+        {% else %}
+          <div class="list-group">
+            {% for operation in operationsEffectuees %}
+              <a href="{{ path('operation_afficher', {id: operation.id}) }}" class="list-group-item list-group-item-action">
+                <strong>{{ operation.titre }}</strong><br>
+                <small class="text-muted">Date : {{ operation.dateOperation|date('d/m/Y H:i') }}</small>
+              </a>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+  
+    <aside>
+      <div class="patient-card">
+        <h3 class="patient-section-title">Notes de consultation</h3>
+        {% if notes is defined and notes is not empty %}
+          <div class="list-group mb-3">
+            {% for note in notes %}
+              <div class="list-group-item">
+                <div class="d-flex justify-content-between">
+                  <div>
+                    <strong>{{ note.createdBy ? (note.createdBy.prenom ~ ' ' ~ note.createdBy.nom) : 'Utilisateur inconnu' }}</strong>
+                  </div>
+                  <small class="text-muted">{{ note.createdAt ? note.createdAt|date('d/m/Y H:i') : '-' }}</small>
+                </div>
+                <div class="mt-2 patient-note">{{ note.content|nl2br }}</div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-muted">Aucune note.</p>
+        {% endif %}
+
+        <div class="d-flex flex-wrap gap-2 mt-3">
+          <a class="btn btn-secondary" href="{{ path('app_greffe') }}">Retour à la liste</a>
+          <a class="btn btn-primary" href="{{ path('patient_export', {'id': patient.id}) }}">Télécharger la fiche (DOCX)</a>
+        </div>
+      </div>
+    </aside>
   </div>
 </div>
 {% endblock %}
