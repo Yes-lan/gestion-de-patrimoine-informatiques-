@@ -1,6 +1,6 @@
 {
 	skip_install_trust
-	auto_https off
+	
 
 	{$CADDY_GLOBAL_OPTIONS}
 
