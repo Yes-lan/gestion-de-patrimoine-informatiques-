@@ -11,7 +11,7 @@
     <div class="card shadow-sm">
         <div class="card-body">
             {{ form_start(form) }}
-            <div class="mb-3">
+            <div class="mb-3" style="position:relative;">
                 <label class="form-label">Patient <span class="text-danger">*</span></label>
                 <input 
                     type="search" 
@@ -21,9 +21,9 @@
                     autocomplete="off"
                     required
                 >
-                <div id="patientSuggestions" class="list-group mt-1" style="display:none; position:absolute; z-index:1000; max-height:200px; overflow-y:auto; width: calc(100% - 2rem);"></div>
+                <div id="patientSuggestions" class="list-group mt-1" style="display:none; position:absolute; top:100%; left:0; z-index:1100; max-height:200px; overflow-y:auto; width:100%; box-sizing:border-box; pointer-events:auto;"></div>
                 <small id="patientSearchFeedback" class="text-muted"></small>
-                <input type="hidden" id="selectedPatientId" name="operation[patient]" required>
+                {{ form_widget(form.patient, {'attr': {'id': 'selectedPatientId', 'required': 'required'}}) }}
                 <div id="selectedPatientDisplay" class="mt-2" style="display:none;">
                     <div class="alert alert-info d-flex justify-content-between align-items-center">
                         <span id="selectedPatientText"></span>
@@ -35,7 +35,7 @@
             <div class="mb-3">{{ form_row(form.dateOperation) }}</div>
             <div class="mb-3">{{ form_row(form.description) }}</div>
 
-            <div class="mb-3">
+            <div class="mb-3" style="position:relative;">
                 <label class="form-label">Personnel médical</label>
                 <input 
                     type="search" 
@@ -44,7 +44,7 @@
                     placeholder="Rechercher un chirurgien ou une infirmière (tapez au moins 2 caractères et appuyez sur Entrée)"
                     autocomplete="off"
                 >
-                <div id="personnelSuggestions" class="list-group mt-1" style="display:none; position:absolute; z-index:1000; max-height:200px; overflow-y:auto;"></div>
+                <div id="personnelSuggestions" class="list-group mt-1" style="display:none; position:absolute; top:100%; left:0; z-index:1100; max-height:200px; overflow-y:auto; width:100%; box-sizing:border-box; pointer-events:auto;"></div>
                 <small id="personnelSearchFeedback" class="text-muted"></small>
             </div>
 
@@ -84,10 +84,27 @@
 // Patient search and selection
 const patientSearch = document.getElementById('patientSearch');
 const patientSuggestions = document.getElementById('patientSuggestions');
-const selectedPatientId = document.getElementById('selectedPatientId');
+let selectedPatientId = document.getElementById('selectedPatientId');
 const selectedPatientDisplay = document.getElementById('selectedPatientDisplay');
 const selectedPatientText = document.getElementById('selectedPatientText');
 const patientSearchFeedback = document.getElementById('patientSearchFeedback');
+
+// Fallback: if the form widget for patient wasn't rendered for any reason,
+// create a hidden input so JS won't throw and selection works.
+if (!selectedPatientId) {
+    const fallback = document.createElement('input');
+    fallback.type = 'hidden';
+    fallback.id = 'selectedPatientId';
+    fallback.name = 'operation[patient]';
+    // append to form so it's submitted
+    const formEl = document.querySelector('form');
+    if (formEl) {
+        formEl.appendChild(fallback);
+    } else {
+        document.body.appendChild(fallback);
+    }
+    selectedPatientId = document.getElementById('selectedPatientId');
+}
 
 let patientSuggestionResults = [];
 let selectedPatientSuggestionIndex = -1;
@@ -114,9 +131,17 @@ patientSearch.addEventListener('input', async () => {
         setFeedback(patientSearchFeedback, 'Recherche patient en cours...');
 
         try {
-            const response = await fetch(`{{ path('operation_patient_search') }}?q=${encodeURIComponent(query)}`);
+            const response = await fetch(`{{ path('operation_patient_search') }}?q=${encodeURIComponent(query)}`, {
+                headers: { 'Accept': 'application/json' },
+            });
             if (currentToken !== patientRequestToken) {
                 return;
+            }
+
+            if (!response.ok) {
+                const text = await response.text().catch(() => '');
+                console.error('Patient search error response:', text);
+                throw new Error('Erreur réseau lors de la recherche patient');
             }
 
             const results = await response.json();
@@ -232,9 +257,17 @@ personnelSearch.addEventListener('input', async () => {
         setFeedback(personnelSearchFeedback, 'Recherche personnel en cours...');
 
         try {
-            const response = await fetch(`{{ path('operation_personnel_search') }}?q=${encodeURIComponent(query)}`);
+            const response = await fetch(`{{ path('operation_personnel_search') }}?q=${encodeURIComponent(query)}`, {
+                headers: { 'Accept': 'application/json' },
+            });
             if (currentToken !== personnelRequestToken) {
                 return;
+            }
+
+            if (!response.ok) {
+                const text = await response.text().catch(() => '');
+                console.error('Personnel search error response:', text);
+                throw new Error('Erreur réseau lors de la recherche personnel');
             }
 
             const results = await response.json();
@@ -379,10 +412,13 @@ function updateHiddenInputs() {
 
 // Click outside to close suggestions
 document.addEventListener('click', (e) => {
-    if (!personnelSearch.contains(e.target) && !suggestionsList.contains(e.target)) {
+    const target = e.target;
+    // If click is outside personnel search area and suggestions list, hide it
+    if (!target.closest('#personnelSearch') && !target.closest('#personnelSuggestions')) {
         suggestionsList.style.display = 'none';
     }
-    if (!patientSearch.contains(e.target) && !patientSuggestions.contains(e.target)) {
+    // If click is outside patient search area and suggestions list, hide it
+    if (!target.closest('#patientSearch') && !target.closest('#patientSuggestions')) {
         patientSuggestions.style.display = 'none';
     }
 });

@@ -247,7 +247,9 @@ class OperationController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $patientId = $request->request->get('operation')['patient'] ?? null;
+            $all = $request->request->all();
+            $operationData = $all['operation'] ?? [];
+            $patientId = is_array($operationData) ? ($operationData['patient'] ?? null) : null;
             if (!$patientId) {
                 $this->addFlash('danger', 'Veuillez sélectionner un patient.');
                 return $this->render('operation/creer.html.twig', [
@@ -267,8 +269,8 @@ class OperationController extends AbstractController
 
             $operation->setPatient($patient);
 
-            $chirurgienIds = $request->request->all()['chirurgien_ids'] ?? [];
-            $infirmiereIds = $request->request->all()['infirmiere_ids'] ?? [];
+            $chirurgienIds = $all['chirurgien_ids'] ?? [];
+            $infirmiereIds = $all['infirmiere_ids'] ?? [];
 
             foreach ($chirurgienIds as $chirurgienId) {
                 $chirurgien = $em->getRepository(User::class)->find((int) $chirurgienId);

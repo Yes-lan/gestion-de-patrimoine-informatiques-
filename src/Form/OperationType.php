@@ -5,6 +5,7 @@ namespace App\Form;
 use App\Entity\Operation;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
+use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -27,6 +28,13 @@ class OperationType extends AbstractType
                 'widget' => 'single_text',
                 'attr' => [
                     'class' => 'form-control',
+                ],
+            ])
+            ->add('patient', HiddenType::class, [
+                'mapped' => false,
+                'required' => true,
+                'attr' => [
+                    // id / class can be overridden in the template if needed
                 ],
             ])
             ->add('description', TextareaType::class, [
