@@ -27,6 +27,10 @@
 	}
 
 	root /app/public
+
+	# Use Caddy's internal CA to serve TLS locally (useful for dev on localhost)
+	# This will make the server serve HTTPS even when ACME is not used.
+	tls internal
 	encode zstd br gzip
 
 	mercure {
