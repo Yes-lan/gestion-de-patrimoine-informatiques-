@@ -14,6 +14,13 @@ security:
             pattern: ^/(_(profiler|wdt)|css|images|js|build)/
             security: false
 
+        # API firewall - stateless, JWT secured
+        api:
+            pattern: ^/api
+            stateless: true
+            provider: app_user_provider
+            custom_authenticator: App\Security\ApiJwtAuthenticator
+
         main:
             lazy: true
             provider: app_user_provider
@@ -32,7 +39,13 @@ security:
         - { path: ^/(_(profiler|wdt)|css|images|js|build)/, roles: PUBLIC_ACCESS }
         - { path: ^/login$, roles: PUBLIC_ACCESS }
         - { path: ^/logout$, roles: PUBLIC_ACCESS }
-        - { path: ^/api/mobile/login$, roles: PUBLIC_ACCESS }
-        - { path: ^/api/mobile, roles: PUBLIC_ACCESS }
+        
+        # API login endpoint is public
+        - { path: ^/api/login$, roles: PUBLIC_ACCESS }
+        
+        # All other API endpoints require authentication
+        - { path: ^/api, roles: ROLE_USER }
+        
+        # Web routes require authentication
         - { path: ^/, roles: ROLE_USER }
         - { path: ^/admin, roles: ROLE_ADMIN }

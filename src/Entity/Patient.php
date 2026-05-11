@@ -2,17 +2,25 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
 use App\Repository\PatientRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: PatientRepository::class)]
+#[ApiResource(
+    normalizationContext: ['groups' => ['patient:read']],
+    denormalizationContext: ['groups' => ['patient:write']],
+    paginationItemsPerPage: 30
+)]
 class Patient
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['patient:read'])]
     private ?int $id = null;
 
     #[ORM\OneToOne(cascade: ['persist', 'remove'])]
@@ -20,18 +28,23 @@ class Patient
     private ?User $user = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['patient:read','patient:write'])]
     private ?string $Name = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['patient:read','patient:write'])]
     private ?string $FirstName = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['patient:read','patient:write'])]
     private ?string $Ville = null;
 
     #[ORM\Column(type: 'boolean', nullable: true)]
+    #[Groups(['patient:read','patient:write'])]
     private ?bool $alive = null;
 
     #[ORM\Column(name: 'needs_greffe', type: 'boolean', nullable: true)]
+    #[Groups(['patient:read','patient:write'])]
     private ?bool $needsGreffe = null;
 
     /**

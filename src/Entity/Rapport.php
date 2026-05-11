@@ -2,17 +2,24 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
+use Symfony\Component\Serializer\Annotation\Groups;
 use App\Repository\RapportRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: RapportRepository::class)]
 #[ORM\Table(name: 'rapport')]
+#[ApiResource(
+    normalizationContext: ['groups' => ['rapport:read']],
+    denormalizationContext: ['groups' => ['rapport:write']]
+)]
 class Rapport
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['rapport:read','operation:read'])]
     private ?int $id = null;
 
     #[ORM\ManyToOne(targetEntity: Operation::class, inversedBy: 'rapports')]
@@ -25,6 +32,7 @@ class Rapport
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank(message: 'Le titre est obligatoire')]
     #[Assert\Length(min: 5, max: 255)]
+    #[Groups(['rapport:read','rapport:write'])]
     private ?string $titre = null;
 
     /**
@@ -33,6 +41,7 @@ class Rapport
      */
     #[ORM\Column(type: 'text')]
     #[Assert\NotBlank(message: 'Le contenu est obligatoire')]
+    #[Groups(['rapport:read','rapport:write'])]
     private ?string $contenuHtml = null;
 
     /**

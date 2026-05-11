@@ -1,0 +1,5 @@
+api_platform:
+  title: 'Gestion Patrimoine API'
+  version: '1.0.0'
+  mapping:
+    paths: ['%kernel.project_dir%/src/Entity']

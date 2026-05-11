@@ -2,20 +2,28 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
+use Symfony\Component\Serializer\Annotation\Groups;
 use App\Repository\RendezVousRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: RendezVousRepository::class)]
 #[ORM\Table(name: 'rendez_vous')]
+#[ApiResource(
+    normalizationContext: ['groups' => ['rdv:read']],
+    denormalizationContext: ['groups' => ['rdv:write']]
+)]
 class RendezVous
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['rdv:read','patient:read'])]
     private ?int $id = null;
 
     #[ORM\ManyToOne(targetEntity: Patient::class)]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
+    #[Groups(['rdv:read','rdv:write'])]
     private ?Patient $patient = null;
 
     #[ORM\ManyToOne(targetEntity: User::class)]
@@ -23,18 +31,23 @@ class RendezVous
     private ?User $createdBy = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['rdv:read','rdv:write'])]
     private ?string $title = null;
 
     #[ORM\Column(type: 'datetime_immutable')]
+    #[Groups(['rdv:read','rdv:write'])]
     private ?\DateTimeImmutable $scheduledAt = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['rdv:read','rdv:write'])]
     private ?string $location = null;
 
     #[ORM\Column(length: 50)]
+    #[Groups(['rdv:read','rdv:write'])]
     private string $status = 'planned';
 
     #[ORM\Column(type: 'text', nullable: true)]
+    #[Groups(['rdv:read','rdv:write'])]
     private ?string $notes = null;
 
     #[ORM\Column(type: 'datetime_immutable')]

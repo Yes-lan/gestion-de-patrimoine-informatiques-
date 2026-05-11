@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Operation;
 use App\Entity\Patient;
+use App\Entity\RendezVous;
 use App\Entity\User;
 use App\Form\OperationType;
 use App\Repository\OperationRepository;
@@ -269,6 +270,40 @@ class OperationController extends AbstractController
 
             $operation->setPatient($patient);
 
+            // Create a mobile rendez-vous corresponding to this operation so the mobile app
+            // shows the scheduled date for the operation.
+            $rdv = null;
+            try {
+                $rdv = new RendezVous();
+                $rdv->setPatient($patient);
+                $title = $operation->getTitre() ?? 'Opération';
+                $rdv->setTitle(sprintf('Opération: %s', $title));
+
+                $opDate = $operation->getDateOperation();
+                if ($opDate instanceof \DateTimeImmutable) {
+                    $scheduled = $opDate;
+                } elseif ($opDate instanceof \DateTime) {
+                    $scheduled = \DateTimeImmutable::createFromMutable($opDate);
+                } else {
+                    $scheduled = new \DateTimeImmutable();
+                }
+
+                $rdv->setScheduledAt($scheduled);
+
+                $currentUser = $this->getUser();
+                if ($currentUser instanceof User) {
+                    $rdv->setCreatedBy($currentUser);
+                }
+
+                $rdv->setStatus('planned');
+
+                $em->persist($rdv);
+            } catch (\Throwable $e) {
+                // If creating the RDV fails, continue creating the operation but log the issue.
+                // We avoid failing the whole request for a non-critical side-effect.
+                $this->container?->get('logger')?->error('Failed to create RendezVous for operation: '.$e->getMessage());
+            }
+
             $chirurgienIds = $all['chirurgien_ids'] ?? [];
             $infirmiereIds = $all['infirmiere_ids'] ?? [];
 
@@ -292,6 +327,17 @@ class OperationController extends AbstractController
 
             $em->persist($operation);
             $em->flush();
+
+            // After flush the operation has an id; update the rdv notes to reference it
+            if ($rdv instanceof RendezVous && $operation->getId() !== null) {
+                try {
+                    $rdv->setNotes(sprintf('Rendez-vous lié à l\'opération #%d', $operation->getId()));
+                    $em->persist($rdv);
+                    $em->flush();
+                } catch (\Throwable $e) {
+                    $this->container?->get('logger')?->error('Failed to update RendezVous notes: '.$e->getMessage());
+                }
+            }
 
             $this->addFlash('success', 'Opération créée avec succès.');
 

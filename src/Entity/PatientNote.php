@@ -2,17 +2,24 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
+use Symfony\Component\Serializer\Annotation\Groups;
 use App\Repository\PatientNoteRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: PatientNoteRepository::class)]
 #[ORM\Table(name: 'patient_note')]
+#[ApiResource(
+    normalizationContext: ['groups' => ['note:read']],
+    denormalizationContext: ['groups' => ['note:write']]
+)]
 class PatientNote
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['note:read','patient:read'])]
     private ?int $id = null;
 
     #[ORM\ManyToOne(targetEntity: Patient::class)]
@@ -24,6 +31,7 @@ class PatientNote
     private ?User $createdBy = null;
 
     #[ORM\Column(type: Types::TEXT)]
+    #[Groups(['note:read','note:write'])]
     private ?string $content = null;
 
     #[ORM\Column(name: 'created_at', type: Types::DATETIME_IMMUTABLE)]

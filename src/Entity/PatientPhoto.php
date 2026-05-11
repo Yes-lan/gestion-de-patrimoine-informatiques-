@@ -2,20 +2,28 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
+use Symfony\Component\Serializer\Annotation\Groups;
 use App\Repository\PatientPhotoRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: PatientPhotoRepository::class)]
 #[ORM\Table(name: 'patient_photo')]
+#[ApiResource(
+    normalizationContext: ['groups' => ['photo:read']],
+    denormalizationContext: ['groups' => ['photo:write']]
+)]
 class PatientPhoto
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['photo:read','patient:read'])]
     private ?int $id = null;
 
     #[ORM\ManyToOne(targetEntity: Patient::class)]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
+    #[Groups(['photo:read','photo:write'])]
     private ?Patient $patient = null;
 
     #[ORM\ManyToOne(targetEntity: User::class)]
@@ -23,15 +31,19 @@ class PatientPhoto
     private ?User $uploadedBy = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['photo:read'])]
     private ?string $filename = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['photo:read'])]
     private ?string $originalName = null;
 
     #[ORM\Column(length: 100)]
+    #[Groups(['photo:read'])]
     private ?string $mimeType = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['photo:read','photo:write'])]
     private ?string $caption = null;
 
     #[ORM\Column(type: 'datetime_immutable')]

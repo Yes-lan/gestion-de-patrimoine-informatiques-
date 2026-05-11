@@ -2,6 +2,8 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
+use Symfony\Component\Serializer\Annotation\Groups;
 use App\Repository\OperationRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -9,24 +11,33 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: OperationRepository::class)]
 #[ORM\Table(name: 'operation')]
+#[ApiResource(
+    normalizationContext: ['groups' => ['operation:read']],
+    denormalizationContext: ['groups' => ['operation:write']]
+)]
 class Operation
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['operation:read','patient:read'])]
     private ?int $id = null;
 
     #[ORM\ManyToOne(inversedBy: 'operations')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['operation:read','operation:write'])]
     private ?Patient $patient = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['operation:read','operation:write'])]
     private ?string $titre = null;
 
     #[ORM\Column(name: 'date_operation', type: 'datetime')]
+    #[Groups(['operation:read','operation:write'])]
     private ?\DateTime $dateOperation = null;
 
     #[ORM\Column(type: 'text', nullable: true)]
+    #[Groups(['operation:read','operation:write'])]
     private ?string $description = null;
 
     #[ORM\Column(name: 'nb_medecins', type: 'integer', options: ['default' => 0])]
