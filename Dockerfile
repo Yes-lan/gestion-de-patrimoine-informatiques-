@@ -25,6 +25,11 @@ RUN apt-get update && apt-get install -y curl && \
 RUN apt-get update && apt-get install -y --no-install-recommends \
 	file \
 	git \
+	libfreetype6-dev \
+	libicu-dev \
+	libjpeg62-turbo-dev \
+	libpng-dev \
+	libzip-dev \
 	&& rm -rf /var/lib/apt/lists/*
 
 RUN set -eux; \
