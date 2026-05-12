@@ -56,10 +56,11 @@
 	@phpRoute {
 		not path /.well-known/mercure*
 		not file {path}
+		not path /index.php
 	}
-	rewrite @phpRoute index.php
+	rewrite @phpRoute /index.php
 
-	@frontController path index.php
+	@frontController path /index.php
 	php @frontController
 
 	file_server {
