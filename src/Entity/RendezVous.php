@@ -55,8 +55,9 @@ class RendezVous
 
     public function __construct()
     {
-        $this->createdAt = new \DateTimeImmutable();
-        $this->scheduledAt = new \DateTimeImmutable();
+        $tz = new \DateTimeZone('Europe/Paris');
+        $this->createdAt = new \DateTimeImmutable('now', $tz);
+        $this->scheduledAt = new \DateTimeImmutable('now', $tz);
     }
 
     public function getId(): ?int
