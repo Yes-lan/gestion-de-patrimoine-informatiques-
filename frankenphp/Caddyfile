@@ -56,7 +56,6 @@
 	@phpRoute {
 		not path /.well-known/mercure*
 		not file {path}
-		not path /index.php
 	}
 	rewrite @phpRoute /index.php
 
